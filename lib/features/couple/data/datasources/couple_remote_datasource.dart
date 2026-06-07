@@ -7,8 +7,8 @@ class CoupleRemoteDatasource {
 
   Future<CoupleCodeModal> getMyCoupleCode() async {
     try {
-      final response = await dio.get('/couple/code');
-      return CoupleCodeModal.fromJson(response.data);
+      final response = await dio.get('/couples/code/me');
+      return CoupleCodeModal.fromJson(response.data['data']);
     } catch (e) {
       throw Exception('Failed to load couple code: $e');
     }

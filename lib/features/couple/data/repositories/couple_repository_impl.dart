@@ -11,6 +11,6 @@ class CoupleRepositoryImpl implements CoupleRepository {
   @override
   Future<CoupleCode> getMyCoupleCode() async {
     CoupleCodeModal result = await remoteDatasource.getMyCoupleCode();
-    return CoupleCode(code: result.code);
+    return CoupleCode(userId: result.userId, code: result.code);
   }
 }

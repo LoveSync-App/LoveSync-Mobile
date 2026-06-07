@@ -1,4 +1,11 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:lovesync_mobile/core/network/dio_client.dart';
+import 'package:lovesync_mobile/features/couple/data/datasources/couple_remote_datasource.dart';
+import 'package:lovesync_mobile/features/couple/data/repositories/couple_repository_impl.dart';
+import 'package:lovesync_mobile/features/couple/domain/repositories/couple_repository.dart';
+import 'package:lovesync_mobile/features/couple/domain/usecases/get_my_couple_code.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class CoupleCodePage extends StatefulWidget {
   const CoupleCodePage({super.key});
@@ -8,9 +15,33 @@ class CoupleCodePage extends StatefulWidget {
 }
 
 class _CoupleCodePageState extends State<CoupleCodePage> {
+  final GetMyCoupleCode _getMyCoupleCode = GetMyCoupleCode(
+    CoupleRepositoryImpl(CoupleRemoteDatasource(DioClient.instance.dio)),
+  );
+
   @override
   void initState() {
     super.initState();
+    fetchCoupleCode();
+  }
+
+  String code = ""; // Late có được gắn giá trị k
+
+  void fetchCoupleCode() async {
+    try {
+      final coupleCode = await _getMyCoupleCode.call();
+
+      setState(() {
+        code = coupleCode.code;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi khi lấy mã ghép đôi: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -100,10 +131,14 @@ class _CoupleCodePageState extends State<CoupleCodePage> {
                         CircleAvatar(
                           radius: 20,
                           backgroundColor: const Color(0xFFE0E0E0),
-                          child: const Icon(
-                            Icons.person,
-                            size: 30,
-                            color: Colors.white,
+                          // child: const Icon(
+                          //   Icons.person,
+                          //   size: 30,
+                          //   color: Colors.white,
+                          // ),
+                          // https://th.bing.com/th/id/R.ad0d7e9d172acc5072ebd40cb59a78b1?rik=bFM6xWR%2bKgVpvw&pid=ImgRaw&r=0
+                          backgroundImage: NetworkImage(
+                            "https://th.bing.com/th/id/OIP.r4A3RhH0Zz0ZKKiBcn4TsAHaHS?o=7rm=3&rs=1&pid=ImgDetMain&o=7&rm=3",
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -118,10 +153,11 @@ class _CoupleCodePageState extends State<CoupleCodePage> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const Text(
-                              "LoveSync User",
+                            Text(
+                              // "LoveSync User",
+                              code,
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF1A1C1D),
                               ),
@@ -131,7 +167,11 @@ class _CoupleCodePageState extends State<CoupleCodePage> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Container(width: 200, height: 200, color: Colors.grey[300]),
+                    QrImageView(
+                      // data: "LoveSync User",
+                      data: code,
+                      size: 200,
+                    ),
                     const SizedBox(height: 16),
                     const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
