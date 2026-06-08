@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/features/couple/data/datasources/couple_remote_datasource.dart';
 import 'package:lovesync_mobile/features/couple/data/repositories/couple_repository_impl.dart';
@@ -58,12 +59,16 @@ class _CoupleScanPageState extends State<CoupleScanPage>
     debugPrint('QR Code: $code');
     try {
       final partner = await _getPartnerByCode.call(code);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Đối tác: ${partner.name}'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text('Đối tác: ${partner.name}'),
+      //     behavior: SnackBarBehavior.floating,
+      //   ),
+      // );
+      if (mounted) {
+        // Navigator.of(context).pop();
+        context.push("/couple/partner-info", extra: partner.name);
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -71,7 +76,7 @@ class _CoupleScanPageState extends State<CoupleScanPage>
           behavior: SnackBarBehavior.floating,
         ),
       );
-      _isScanned = false; 
+      _isScanned = false;
     }
   }
 
