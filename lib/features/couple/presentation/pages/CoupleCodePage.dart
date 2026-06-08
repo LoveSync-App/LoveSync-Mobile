@@ -6,6 +6,7 @@ import 'package:lovesync_mobile/features/couple/data/repositories/couple_reposit
 import 'package:lovesync_mobile/features/couple/domain/repositories/couple_repository.dart';
 import 'package:lovesync_mobile/features/couple/domain/usecases/get_my_couple_code.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:go_router/go_router.dart';
 
 class CoupleCodePage extends StatefulWidget {
   const CoupleCodePage({super.key});
@@ -42,6 +43,10 @@ class _CoupleCodePageState extends State<CoupleCodePage> {
         ),
       );
     }
+  }
+
+  void _onClickScan(BuildContext context) {
+    context.push("/couple/scan");
   }
 
   @override
@@ -191,13 +196,9 @@ class _CoupleCodePageState extends State<CoupleCodePage> {
               const SizedBox(height: 32),
               ElevatedButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Tính năng đang được phát triển'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                  _onClickScan(context);
                 },
+
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFA03B56),
                   padding: const EdgeInsets.symmetric(
