@@ -1,15 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lovesync_mobile/features/auth/presentation/pages/login_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/couple_code_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/couple_days_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/couple_scan_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/partner_info_page.dart';
+import 'package:lovesync_mobile/providers/auth_provider.dart';
+import 'package:provider/provider.dart';
 
 class AppRouter {
+  late final AuthProvider _authProvider;
+  AppRouter(this._authProvider);
+
   GoRouter get router => GoRouter(
-    // initialLocation: '/',
-    initialLocation: '/couple/get-days',
+    refreshListenable: _authProvider,
+    initialLocation: '/loading',
+    // initialLocation: '/couple/code',
     routes: [
+      GoRoute(
+        path: '/loading',
+        builder: (context, state) => const Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 20),
+                Text('Đang Tải...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+      GoRoute(path: '/login', builder: (context, state) => LoginPage()),
       GoRoute(
         path: "/couple/code",
         builder: (context, state) => const CoupleCodePage(),
@@ -28,5 +51,17 @@ class AppRouter {
         builder: (context, state) => const CoupleDaysPage(),
       ),
     ],
+    redirect: (context, state) {
+      final accessToken = context.read<AuthProvider>().accessToken;
+      final isLoggingIn = context.read<AuthProvider>().isLoadingInit;
+
+      if (isLoggingIn) {
+        return '/loading';
+      }
+
+      if (accessToken.isEmpty) {
+        return '/login';
+      }
+    },
   );
 }
