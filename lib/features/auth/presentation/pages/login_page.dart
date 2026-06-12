@@ -146,7 +146,10 @@ class _LoginPageState extends State<LoginPage> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    context.push("/forgot-password");
+                  },
+
                   child: const Text("Quên mật khẩu?"),
                 ),
               ),
@@ -227,7 +230,7 @@ class _LoginPageState extends State<LoginPage> {
                           style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
                             minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap, 
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
                           onPressed: () {
                             context.push("/register");

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lovesync_mobile/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:lovesync_mobile/features/auth/presentation/pages/login_page.dart';
 import 'package:lovesync_mobile/features/auth/presentation/pages/register_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/couple_code_page.dart';
@@ -39,6 +40,10 @@ class AppRouter {
         builder: (context, state) => const RegisterPage(),
       ),
       GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPasswordPage(),
+      ),
+      GoRoute(
         path: "/couple/code",
         builder: (context, state) => const CoupleCodePage(),
       ),
@@ -65,7 +70,8 @@ class AppRouter {
       }
 
       if (state.matchedLocation == '/register' ||
-          state.matchedLocation == '/login') {
+          state.matchedLocation == '/login' ||
+          state.matchedLocation == '/forgot-password') {
         return null;
       }
 
