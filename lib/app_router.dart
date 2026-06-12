@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lovesync_mobile/features/auth/presentation/pages/login_page.dart';
+import 'package:lovesync_mobile/features/auth/presentation/pages/register_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/couple_code_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/couple_days_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/couple_scan_page.dart';
@@ -14,7 +15,7 @@ class AppRouter {
 
   GoRouter get router => GoRouter(
     refreshListenable: _authProvider,
-    initialLocation: '/loading',
+    initialLocation: '/login',
     // initialLocation: '/couple/code',
     routes: [
       GoRoute(
@@ -33,6 +34,10 @@ class AppRouter {
         ),
       ),
       GoRoute(path: '/login', builder: (context, state) => LoginPage()),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) => const RegisterPage(),
+      ),
       GoRoute(
         path: "/couple/code",
         builder: (context, state) => const CoupleCodePage(),
@@ -57,6 +62,11 @@ class AppRouter {
 
       if (isLoggingIn) {
         return '/loading';
+      }
+
+      if (state.matchedLocation == '/register' ||
+          state.matchedLocation == '/login') {
+        return null;
       }
 
       if (accessToken.isEmpty) {
