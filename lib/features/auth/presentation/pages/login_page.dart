@@ -1,3 +1,5 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +7,9 @@ import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:lovesync_mobile/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:lovesync_mobile/features/auth/domain/usecases/post_login.dart';
+import 'package:lovesync_mobile/features/user/data/datasources/user_remote_datasource.dart';
+import 'package:lovesync_mobile/features/user/data/repositories/user_repository_impl.dart';
+import 'package:lovesync_mobile/features/user/domain/usecases/post_register_device.dart';
 import 'package:lovesync_mobile/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -17,6 +22,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   late final PostLogin _postLogin;
+  late final PostRegisterDevice _postRegisterDevice;
 
   bool _isShowPassword = false;
   final TextEditingController _emailController = TextEditingController();
@@ -29,6 +35,9 @@ class _LoginPageState extends State<LoginPage> {
     super.initState();
     _postLogin = PostLogin(
       AuthRepositoryImpl(AuthRemoteDatasource(context.read<DioClient>().dio)),
+    );
+    _postRegisterDevice = PostRegisterDevice(
+      UserRepositoryImpl(UserRemoteDatasource(context.read<DioClient>().dio)),
     );
   }
 
@@ -55,6 +64,8 @@ class _LoginPageState extends State<LoginPage> {
 
       if (mounted) {
         await context.read<AuthProvider>().login(response.accessToken);
+        final fcmToken = await FirebaseMessaging.instance.getToken();
+        await _postRegisterDevice.call(fcmToken ?? "");
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -76,9 +87,11 @@ class _LoginPageState extends State<LoginPage> {
         );
       }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

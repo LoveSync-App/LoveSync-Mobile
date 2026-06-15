@@ -1,3 +1,5 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/core/storage/impl/shared_preferences_auth_storage.dart';
@@ -5,10 +7,21 @@ import 'package:lovesync_mobile/providers/auth_provider.dart';
 import 'app_router.dart';
 import 'package:provider/provider.dart';
 
-void main() {
-  // runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp();
+
+  await FirebaseMessaging.instance.requestPermission();
+
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+  });
+
+  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+  });
+
   runApp(
-      MultiProvider(
+    MultiProvider(
       providers: [
         ChangeNotifierProvider(
           create: (_) => AuthProvider(SharedPreferencesAuthStorage())..load(),

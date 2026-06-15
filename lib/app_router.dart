@@ -4,6 +4,7 @@ import 'package:lovesync_mobile/features/auth/presentation/pages/forgot_password
 import 'package:lovesync_mobile/features/auth/presentation/pages/login_page.dart';
 import 'package:lovesync_mobile/features/auth/presentation/pages/register_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/couple_code_page.dart';
+import 'package:lovesync_mobile/features/couple/presentation/pages/couple_confirmation_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/couple_days_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/couple_scan_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/partner_info_page.dart';
@@ -52,6 +53,10 @@ class AppRouter {
             userAvatarUrl: extra['userAvatarUrl'] as String,
           );
         },
+      ),
+      GoRoute(
+        path: '/couple/confirmation',
+        builder: (context, state) => const CoupleConfirmationPage(),
       ),
       GoRoute(path: '/login', builder: (context, state) => LoginPage()),
       GoRoute(

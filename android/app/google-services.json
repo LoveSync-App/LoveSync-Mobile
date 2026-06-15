@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "375400582595",
+    "project_id": "love-sync-675db",
+    "storage_bucket": "love-sync-675db.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:375400582595:android:2974f5e3c2210988a3c176",
+        "android_client_info": {
+          "package_name": "com.example.lovesync_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD4GENp4vEKHfds1P9LUddTOMw4q_2fH3E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

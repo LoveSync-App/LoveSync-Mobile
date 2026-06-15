@@ -42,13 +42,10 @@ class CoupleRepositoryImpl implements CoupleRepository {
       userName: result.userName,
       userAvatar: result.userAvatar,
       userEmail: result.userEmail,
-      userPhone: result.userPhone,
       partnerId: result.partnerId,
       partnerName: result.partnerName,
       partnerAvatar: result.partnerAvatar,
       partnerEmail: result.partnerEmail,
-      partnerPhone: result.partnerPhone,
-      startDate: result.startDate,
     );
   }
 

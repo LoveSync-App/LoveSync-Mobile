@@ -9,4 +9,8 @@ class UserRemoteDatasource {
     final response = await dio.get('/users/me');
     return UserResponseModal.fromJson(response.data['data']);
   }
+
+  Future<void> postRegisterToken(String token) async {
+    await dio.post('/device', data: {'token': token});
+  }
 }

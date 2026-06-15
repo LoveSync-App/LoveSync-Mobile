@@ -27,7 +27,13 @@ class CoupleShellScaffold extends StatelessWidget {
           ),
         ),
         actions: [
-          Icon(Icons.notifications, color: Colors.pink.shade700),
+          IconButton(
+            onPressed: () => {context.push('/couple/confirmation')},
+            icon: Icon(
+              Icons.notifications_none,
+              color: const Color(0xFF1A1C1D),
+            ),
+          ),
           const SizedBox(width: 12),
         ],
         centerTitle: true,

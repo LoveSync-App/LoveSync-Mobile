@@ -16,4 +16,9 @@ class UserRepositoryImpl extends UserRepository {
       avatar: userResponseModel.avatar,
     );
   }
+  
+  @override
+  Future<void> postRegisterToken(String token) {
+    return userRemoteDatasource.postRegisterToken(token);
+  }
 }
