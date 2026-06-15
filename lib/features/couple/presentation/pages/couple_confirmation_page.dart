@@ -1,5 +1,14 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lovesync_mobile/core/network/dio_client.dart';
+import 'package:lovesync_mobile/features/couple/data/datasources/couple_remote_datasource.dart';
+import 'package:lovesync_mobile/features/couple/data/repositories/couple_repository_impl.dart';
 import 'package:lovesync_mobile/features/couple/domain/entities/invitation.dart';
+import 'package:lovesync_mobile/features/couple/domain/usecases/get_invitation_pending.dart';
+import 'package:lovesync_mobile/features/couple/domain/usecases/patch_accept_invitation.dart';
+import 'package:lovesync_mobile/features/couple/domain/usecases/patch_reject_invitation.dart';
+import 'package:provider/provider.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 class CoupleConfirmationPage extends StatefulWidget {
@@ -12,36 +21,54 @@ class CoupleConfirmationPage extends StatefulWidget {
 class _coupleConfirmationPageState extends State<CoupleConfirmationPage> {
   bool isLoading = false;
 
-  List<Invitation> invitations = [
-    Invitation(
-      invitationId: '1',
-      partnerName: 'Nguyễn Văn A',
-      partnerAvatar:
-          'https://i.pinimg.com/550x/0a/2f/68/0a2f68448ab64c7fb67e75ef410de163.jpg',
-    ),
-    Invitation(
-      invitationId: '2',
-      partnerName: 'Trần Thị B',
-      partnerAvatar:
-          'https://i.pinimg.com/550x/0a/2f/68/0a2f68448ab64c7fb67e75ef410de163.jpg',
-    ),
-    Invitation(
-      invitationId: '1',
-      partnerName: 'Nguyễn Văn A',
-      partnerAvatar:
-          'https://i.pinimg.com/550x/0a/2f/68/0a2f68448ab64c7fb67e75ef410de163.jpg',
-    ),
-    Invitation(
-      invitationId: '2',
-      partnerName: 'Trần Thị B',
-      partnerAvatar:
-          'https://i.pinimg.com/550x/0a/2f/68/0a2f68448ab64c7fb67e75ef410de163.jpg',
-    ),
-  ];
+  List<Invitation> invitations = [];
+
+  late final GetInvitationPending _getInvitationPending;
+  late final PatchAcceptInvitation _patchAcceptInvitation;
+  late final PatchRejectInvitation _patchRejectInvitation;
 
   @override
   void initState() {
     super.initState();
+
+    _getInvitationPending = GetInvitationPending(
+      CoupleRepositoryImpl(
+        CoupleRemoteDatasource(context.read<DioClient>().dio),
+      ),
+    );
+
+    _patchAcceptInvitation = PatchAcceptInvitation(
+      CoupleRepositoryImpl(
+        CoupleRemoteDatasource(context.read<DioClient>().dio),
+      ),
+    );
+
+    _patchRejectInvitation = PatchRejectInvitation(
+      CoupleRepositoryImpl(
+        CoupleRemoteDatasource(context.read<DioClient>().dio),
+      ),
+    );
+
+    _fetchInvitations();
+  }
+
+  Future<void> _fetchInvitations() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final result = await _getInvitationPending();
+      setState(() {
+        invitations = result;
+      });
+    } catch (e) {
+      // Handle error
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   @override
@@ -60,12 +87,33 @@ class _coupleConfirmationPageState extends State<CoupleConfirmationPage> {
       ),
       body: Skeletonizer(
         enabled: isLoading,
-        child: ListView.builder(
-          itemCount: invitations.length,
-          itemBuilder: (context, index) {
-            return _buildContent(invitations[index]);
-          },
-        ),
+        child: (invitations.isEmpty)
+            ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.notifications_off,
+                      size: 80,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Không có lời mời nào',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : ListView.builder(
+                itemCount: invitations.length,
+                itemBuilder: (context, index) {
+                  return _buildContent(invitations[index]);
+                },
+              ),
       ),
     );
   }
@@ -120,7 +168,25 @@ class _coupleConfirmationPageState extends State<CoupleConfirmationPage> {
             children: [
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () async {
+                    try {
+                      await _patchRejectInvitation.call(
+                        invitation.invitationId,
+                      );
+                      _fetchInvitations();
+                    } on DioException catch (e) {
+                      if (e.response?.statusCode == 400) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Lời mời đã hết hạn')),
+                        );
+                        _fetchInvitations();
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Đã có lỗi xảy ra')),
+                        );
+                      }
+                    }
+                  },
                   child: Text('Từ Chối'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.grey.shade500,
@@ -130,7 +196,30 @@ class _coupleConfirmationPageState extends State<CoupleConfirmationPage> {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: ElevatedButton(onPressed: () {}, child: Text('Đồng Ý')),
+                child: ElevatedButton(
+                  onPressed: () async {
+                    try {
+                      await _patchAcceptInvitation.call(
+                        invitation.invitationId,
+                      );
+                      if (mounted) {
+                        context.go("/couple");
+                      }
+                    } on DioException catch (e) {
+                      if (e.response?.statusCode == 400) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Lời mời đã hết hạn')),
+                        );
+                        _fetchInvitations();
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Đã có lỗi xảy ra')),
+                        );
+                      }
+                    }
+                  },
+                  child: Text('Đồng Ý'),
+                ),
               ),
             ],
           ),

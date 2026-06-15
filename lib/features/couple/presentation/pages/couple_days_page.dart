@@ -53,12 +53,7 @@ class _CoupleDaysPageState extends State<CoupleDaysPage>
     } on DioException catch (e) {
       if (e.response?.statusCode != 404) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Lỗi khi lấy thông tin cặp đôi: $e'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          context.go("/couple/code");
         }
       }
     } finally {

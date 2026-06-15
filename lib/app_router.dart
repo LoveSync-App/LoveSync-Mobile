@@ -16,6 +16,8 @@ class AppRouter {
   late final AuthProvider _authProvider;
   AppRouter(this._authProvider);
 
+  
+
   GoRouter get router => GoRouter(
     refreshListenable: _authProvider,
     // initialLocation: '/couple/partner-info',

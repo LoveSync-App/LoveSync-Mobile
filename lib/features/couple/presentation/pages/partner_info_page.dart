@@ -425,8 +425,12 @@ class _PartnerInfoPageState extends State<PartnerInfoPage>
                             try {
                               await _postCreateCouple(widget.partnerCode);
                               if (mounted) {
-                                // Navigator.pop(context, true);
-                                context.go("/couple");
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text("Đã gửi yêu cầu kết nối!"),
+                                  ),
+                                );
+                                context.go("/couple/code");
                               }
                             } on DioException catch (e) {
                               if (mounted) {

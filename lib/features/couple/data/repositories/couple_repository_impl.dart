@@ -1,10 +1,12 @@
 import 'package:lovesync_mobile/features/couple/data/datasources/couple_remote_datasource.dart';
 import 'package:lovesync_mobile/features/couple/data/models/couple_code_modal.dart';
 import 'package:lovesync_mobile/features/couple/data/models/couple_modal.dart';
+import 'package:lovesync_mobile/features/couple/data/models/invitation_modal.dart';
 import 'package:lovesync_mobile/features/couple/data/models/partner_modal.dart';
 import 'package:lovesync_mobile/features/couple/domain/entities/couple.dart';
 import 'package:lovesync_mobile/features/couple/domain/entities/couple_code.dart';
 import 'package:lovesync_mobile/features/couple/domain/entities/couple_day.dart';
+import 'package:lovesync_mobile/features/couple/domain/entities/invitation.dart';
 import 'package:lovesync_mobile/features/couple/domain/entities/partner.dart';
 import 'package:lovesync_mobile/features/couple/domain/repositories/couple_repository.dart';
 
@@ -58,5 +60,30 @@ class CoupleRepositoryImpl implements CoupleRepository {
   @override
   Future<void> createCouple(String code) async {
     return await remoteDatasource.createCouple(code);
+  }
+
+  @override
+  Future<void> acceptInvitation(String invitationId) async {
+    await remoteDatasource.acceptInvitation(invitationId);
+  }
+
+  @override
+  Future<List<Invitation>> getInvitationsPending() async {
+    List<InvitationModal> result = await remoteDatasource
+        .getInvitationsPending();
+    return result
+        .map(
+          (invitation) => Invitation(
+            invitationId: invitation.invitationId,
+            partnerName: invitation.partnerName,
+            partnerAvatar: invitation.partnerAvatar,
+          ),
+        )
+        .toList();
+  }
+
+  @override
+  Future<void> rejectInvitation(String invitationId) async {
+    await remoteDatasource.rejectInvitation(invitationId);
   }
 }
