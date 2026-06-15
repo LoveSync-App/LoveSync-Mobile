@@ -63,7 +63,7 @@ class _LoginPageState extends State<LoginPage> {
               behavior: SnackBarBehavior.floating,
             ),
           );
-          context.go("/couple/code");
+          context.go("/couple");
         }
       }
     } catch (e) {
@@ -328,6 +328,7 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 10),
                       ],
                     ),
                   ),

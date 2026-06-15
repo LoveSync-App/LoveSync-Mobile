@@ -21,4 +21,7 @@ class SharedPreferencesAuthStorage implements AuthStorage {
     final pref = await SharedPreferences.getInstance();
     await pref.setString(_accessTokenKey, value);
   }
+  
+
 }
+

@@ -1,9 +1,28 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lovesync_mobile/core/network/dio_client.dart';
+import 'package:lovesync_mobile/features/couple/data/datasources/couple_remote_datasource.dart';
+import 'package:lovesync_mobile/features/couple/data/repositories/couple_repository_impl.dart';
+import 'package:lovesync_mobile/features/couple/domain/entities/couple.dart';
+import 'package:lovesync_mobile/features/couple/domain/usecases/post_create_couple.dart';
+import 'package:provider/provider.dart';
 
 class PartnerInfoPage extends StatefulWidget {
+  final String userFullName;
+  final String userAvatarUrl;
   final String partnerName;
+  final String partnerAvatarUrl;
+  final String partnerCode;
 
-  const PartnerInfoPage({super.key, required this.partnerName});
+  const PartnerInfoPage({
+    super.key,
+    required this.userFullName,
+    required this.userAvatarUrl,
+    required this.partnerName,
+    required this.partnerAvatarUrl,
+    required this.partnerCode,
+  });
 
   @override
   State<PartnerInfoPage> createState() => _PartnerInfoPageState();
@@ -11,6 +30,18 @@ class PartnerInfoPage extends StatefulWidget {
 
 class _PartnerInfoPageState extends State<PartnerInfoPage>
     with SingleTickerProviderStateMixin {
+  late final PostCreateCouple _postCreateCouple;
+
+  @override
+  initState() {
+    super.initState();
+    _postCreateCouple = PostCreateCouple(
+      CoupleRepositoryImpl(
+        CoupleRemoteDatasource(context.read<DioClient>().dio),
+      ),
+    );
+  }
+
   Widget _NamePill({required String name}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -149,18 +180,18 @@ class _PartnerInfoPageState extends State<PartnerInfoPage>
                         Expanded(
                           child: Column(
                             children: [
-                              const CircleAvatar(
+                              CircleAvatar(
                                 radius: 42,
                                 backgroundColor: Colors.white,
                                 child: CircleAvatar(
                                   radius: 38,
                                   backgroundImage: NetworkImage(
-                                    'https://th.bing.com/th/id/OIP.r4A3RhH0Zz0ZKKiBcn4TsAHaHS?o=7rm=3&rs=1&pid=ImgDetMain&o=7&rm=3',
+                                    widget.userAvatarUrl,
                                   ),
                                 ),
                               ),
                               const SizedBox(height: 10),
-                              _NamePill(name: 'Sarah'),
+                              _NamePill(name: widget.userFullName),
                             ],
                           ),
                         ),
@@ -214,13 +245,13 @@ class _PartnerInfoPageState extends State<PartnerInfoPage>
                         Expanded(
                           child: Column(
                             children: [
-                              const CircleAvatar(
+                              CircleAvatar(
                                 radius: 42,
                                 backgroundColor: Colors.white,
                                 child: CircleAvatar(
                                   radius: 38,
                                   backgroundImage: NetworkImage(
-                                    'https://th.bing.com/th/id/OIP.r4A3RhH0Zz0ZKKiBcn4TsAHaHS?o=7rm=3&rs=1&pid=ImgDetMain&o=7&rm=3',
+                                    widget.partnerAvatarUrl,
                                   ),
                                 ),
                               ),
@@ -252,7 +283,7 @@ class _PartnerInfoPageState extends State<PartnerInfoPage>
                       child: Column(
                         children: [
                           const Text(
-                            'Found your partner!',
+                            'Đã tìm thấy người ấy!',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 28,
@@ -271,7 +302,7 @@ class _PartnerInfoPageState extends State<PartnerInfoPage>
                               ),
                               children: [
                                 const TextSpan(
-                                  text: 'Would you like to connect with ',
+                                  text: 'Bạn có muốn kết nối với ',
                                 ),
                                 TextSpan(
                                   text: widget.partnerName,
@@ -280,7 +311,9 @@ class _PartnerInfoPageState extends State<PartnerInfoPage>
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                                const TextSpan(text: ' to start your journey?'),
+                                const TextSpan(
+                                  text: ' để bắt đầu hành trình của bạn?',
+                                ),
                               ],
                             ),
                             textAlign: TextAlign.center,
@@ -317,7 +350,7 @@ class _PartnerInfoPageState extends State<PartnerInfoPage>
                                 ),
                                 const SizedBox(height: 10),
                                 const Text(
-                                  'Share Stories',
+                                  'Nhật Ký Chung',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
@@ -355,7 +388,7 @@ class _PartnerInfoPageState extends State<PartnerInfoPage>
                                 ),
                                 const SizedBox(height: 10),
                                 const Text(
-                                  'Shared Events',
+                                  'Sự Kiện Chung',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
@@ -375,9 +408,10 @@ class _PartnerInfoPageState extends State<PartnerInfoPage>
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(29),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFC13E67), Color(0xFF6A58A8)],
-                          ),
+                          color: Color(0xFFA03B56),
+                          // gradient: const LinearGradient(
+                          //   colors: [Color(0xFFC13E67), Color(0xFF6A58A8)],
+                          // ),
                           boxShadow: [
                             BoxShadow(
                               color: const Color(0xFF9B4A7A).withOpacity(0.28),
@@ -387,7 +421,23 @@ class _PartnerInfoPageState extends State<PartnerInfoPage>
                           ],
                         ),
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () async {
+                            try {
+                              await _postCreateCouple(widget.partnerCode);
+                              if (mounted) {
+                                // Navigator.pop(context, true);
+                                context.go("/couple");
+                              }
+                            } on DioException catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text("Lỗi khi kết nối server"),
+                                  ),
+                                );
+                              }
+                            }
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
@@ -396,7 +446,7 @@ class _PartnerInfoPageState extends State<PartnerInfoPage>
                             ),
                           ),
                           child: const Text(
-                            'Confirm Connection',
+                            'Xác Nhận Kết Nối',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
@@ -411,7 +461,11 @@ class _PartnerInfoPageState extends State<PartnerInfoPage>
                       width: double.infinity,
                       height: 56,
                       child: OutlinedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          if (mounted) {
+                            Navigator.pop(context);
+                          }
+                        },
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(
                             color: Colors.deepPurple.shade300,
@@ -423,7 +477,7 @@ class _PartnerInfoPageState extends State<PartnerInfoPage>
                           backgroundColor: Colors.white.withOpacity(0.45),
                         ),
                         child: Text(
-                          'Not them? Try again',
+                          'Không phải người đó? Thử lại',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
@@ -433,15 +487,7 @@ class _PartnerInfoPageState extends State<PartnerInfoPage>
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Text(
-                      'By connecting, you agree to share your activity feed.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.brown.shade300,
-                        height: 1.35,
-                      ),
-                    ),
+
                     const SizedBox(height: 18),
                   ],
                 ),

@@ -1,16 +1,13 @@
-class LoginResponse {
-  final String accessToken;
-
+class RegisterResponse {
   final String id;
-  final String email;
+  final String email; 
   final String name;
   final String avatar;
 
-  LoginResponse({
+  RegisterResponse({
     required this.id,
     required this.email,
     required this.name,
-    required this.accessToken,
     required this.avatar,
   });
 }

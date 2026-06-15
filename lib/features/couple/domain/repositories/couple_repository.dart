@@ -8,4 +8,5 @@ abstract class CoupleRepository {
   Future<Partner> getPartnerByCode(String code);
   Future<Couple> getMyCouple();
   Future<CoupleDay> getCoupleDays();
+  Future<void> createCouple(String code);
 }

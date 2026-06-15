@@ -1,5 +1,6 @@
 import 'package:lovesync_mobile/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:lovesync_mobile/features/auth/domain/entities/login_response.dart';
+import 'package:lovesync_mobile/features/auth/domain/entities/register_response.dart';
 import 'package:lovesync_mobile/features/auth/domain/repositories/auth_repository.dart';
 
 class AuthRepositoryImpl extends AuthRepository {
@@ -13,7 +14,29 @@ class AuthRepositoryImpl extends AuthRepository {
       id: loginResponseModel.user.id,
       name: loginResponseModel.user.name,
       email: loginResponseModel.user.email,
+      avatar: loginResponseModel.user.avatar,
       accessToken: loginResponseModel.accessToken,
+    );
+  }
+
+  @override
+  Future<RegisterResponse> register(
+    String email,
+    String password,
+    String passwordConfirm,
+    String name,
+  ) async {
+    final registerResponseModel = await remoteDatasource.register(
+      email,
+      password,
+      passwordConfirm,
+      name,
+    );
+    return RegisterResponse(
+      id: registerResponseModel.id,
+      name: registerResponseModel.name,
+      email: registerResponseModel.email,
+      avatar: registerResponseModel.avatar,
     );
   }
 }

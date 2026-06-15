@@ -27,4 +27,8 @@ class CoupleRemoteDatasource {
     final response = await dio.get('/couples/me/love-days');
     return CoupleDayModal.fromJson(response.data['data']);
   }
+
+  Future<void> createCouple(String code) async {
+    await dio.post('/couples/code/$code');
+  }
 }

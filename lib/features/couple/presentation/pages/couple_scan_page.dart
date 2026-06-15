@@ -5,6 +5,10 @@ import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/features/couple/data/datasources/couple_remote_datasource.dart';
 import 'package:lovesync_mobile/features/couple/data/repositories/couple_repository_impl.dart';
 import 'package:lovesync_mobile/features/couple/domain/usecases/get_partner_by_code.dart';
+import 'package:lovesync_mobile/features/user/data/datasources/user_remote_datasource.dart';
+import 'package:lovesync_mobile/features/user/data/repositories/user_repository_impl.dart';
+import 'package:lovesync_mobile/features/user/domain/repositories/user_repository.dart';
+import 'package:lovesync_mobile/features/user/domain/usecases/get_user_info.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
@@ -25,6 +29,7 @@ class _CoupleScanPageState extends State<CoupleScanPage>
   late final Animation<double> _scanAnimation;
 
   late final GetPartnerByCode _getPartnerByCode;
+  late final GetUserInfo _getUserInfo;
 
   bool _isScanned = false;
 
@@ -47,6 +52,10 @@ class _CoupleScanPageState extends State<CoupleScanPage>
         CoupleRemoteDatasource(context.read<DioClient>().dio),
       ),
     );
+
+    _getUserInfo = GetUserInfo(
+      UserRepositoryImpl(UserRemoteDatasource(context.read<DioClient>().dio)),
+    );
   }
 
   @override
@@ -65,9 +74,19 @@ class _CoupleScanPageState extends State<CoupleScanPage>
     debugPrint('QR Code: $code');
     try {
       final partner = await _getPartnerByCode.call(code);
+      final userInfo = await _getUserInfo.call();
 
       if (mounted) {
-        context.push("/couple/partner-info", extra: partner.name);
+        context.push(
+          "/couple/partner-info",
+          extra: {
+            'partnerCode': code,
+            'partnerName': partner.name,
+            'partnerAvatarUrl': partner.avatar,
+            'userFullName': userInfo.name,
+            'userAvatarUrl': userInfo.avatar,
+          },
+        );
       }
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) {

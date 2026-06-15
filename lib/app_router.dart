@@ -17,6 +17,7 @@ class AppRouter {
 
   GoRouter get router => GoRouter(
     refreshListenable: _authProvider,
+    // initialLocation: '/couple/partner-info',
     initialLocation: '/login',
     // initialLocation: '/couple/code',
     routes: [
@@ -34,6 +35,23 @@ class AppRouter {
             ),
           ),
         ),
+      ),
+      GoRoute(
+        path: "/couple/scan",
+        builder: (context, state) => const CoupleScanPage(),
+      ),
+      GoRoute(
+        path: "/couple/partner-info",
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return PartnerInfoPage(
+            partnerCode: extra['partnerCode'] as String,
+            partnerName: extra['partnerName'] as String,
+            partnerAvatarUrl: extra['partnerAvatarUrl'] as String,
+            userFullName: extra['userFullName'] as String,
+            userAvatarUrl: extra['userAvatarUrl'] as String,
+          );
+        },
       ),
       GoRoute(path: '/login', builder: (context, state) => LoginPage()),
       GoRoute(
@@ -96,15 +114,6 @@ class AppRouter {
             ],
           ),
         ],
-      ),
-      GoRoute(
-        path: "/couple/scan",
-        builder: (context, state) => const CoupleScanPage(),
-      ),
-      GoRoute(
-        path: "/couple/partner-info",
-        builder: (context, state) =>
-            PartnerInfoPage(partnerName: state.extra as String),
       ),
     ],
     redirect: (context, state) {

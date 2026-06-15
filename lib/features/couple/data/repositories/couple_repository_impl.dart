@@ -57,4 +57,9 @@ class CoupleRepositoryImpl implements CoupleRepository {
     CoupleDayModal result = await remoteDatasource.getCoupleDays();
     return CoupleDay(loveDays: result.loveDays);
   }
+
+  @override
+  Future<void> createCouple(String code) async {
+    return await remoteDatasource.createCouple(code);
+  }
 }
