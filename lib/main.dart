@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
+    final authProvider = context.read<AuthProvider>();
 
     return MaterialApp.router(
       title: 'Flutter Demo',

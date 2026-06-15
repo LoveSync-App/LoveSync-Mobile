@@ -15,6 +15,7 @@ class AuthProvider extends ChangeNotifier {
     _isLoadingInit = true;
     notifyListeners();
     _accessToken = await _authStorage.readAccessToken() ?? '';
+    print('Loaded access token: $_accessToken');
     _isLoadingInit = false;
     notifyListeners();
   }

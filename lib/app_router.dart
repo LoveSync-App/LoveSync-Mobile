@@ -62,22 +62,33 @@ class AppRouter {
       ),
     ],
     redirect: (context, state) {
-      final accessToken = context.read<AuthProvider>().accessToken;
-      final isLoggingIn = context.read<AuthProvider>().isLoadingInit;
+      final accessToken = _authProvider.accessToken;
+      final isLoadingInit = _authProvider.isLoadingInit;
 
-      if (isLoggingIn) {
-        return '/loading';
+      final location = state.matchedLocation;
+
+      final isAuthPage =
+          location == '/login' ||
+          location == '/register' ||
+          location == '/forgot-password';
+
+      if (isLoadingInit) {
+        return location == '/loading' ? null : '/loading';
       }
 
-      if (state.matchedLocation == '/register' ||
-          state.matchedLocation == '/login' ||
-          state.matchedLocation == '/forgot-password') {
-        return null;
+      if (location == '/loading') {
+        return accessToken.isNotEmpty ? '/couple/code' : '/login';
       }
 
-      if (accessToken.isEmpty) {
+      if (accessToken.isEmpty && !isAuthPage) {
         return '/login';
       }
+
+      if (accessToken.isNotEmpty && isAuthPage) {
+        return '/couple/code';
+      }
+
+      return null;
     },
   );
 }
