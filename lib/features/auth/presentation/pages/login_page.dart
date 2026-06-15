@@ -16,15 +16,21 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final PostLogin _postLogin = PostLogin(
-    AuthRepositoryImpl(AuthRemoteDatasource(DioClient.instance.dio)),
-  );
+  late final PostLogin _postLogin;
 
   bool _isShowPassword = false;
-  TextEditingController _emailController = TextEditingController();
-  TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   bool _isLoading = false;
+
+  @override
+  initState() {
+    super.initState();
+    _postLogin = PostLogin(
+      AuthRepositoryImpl(AuthRemoteDatasource(context.read<DioClient>().dio)),
+    );
+  }
 
   void _onClickLogin() async {
     try {

@@ -7,6 +7,7 @@ import 'package:lovesync_mobile/features/couple/presentation/pages/couple_code_p
 import 'package:lovesync_mobile/features/couple/presentation/pages/couple_days_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/couple_scan_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/partner_info_page.dart';
+import 'package:lovesync_mobile/shared/widgets/couple_shell_scaffold.dart';
 import 'package:lovesync_mobile/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -43,9 +44,58 @@ class AppRouter {
         path: '/forgot-password',
         builder: (context, state) => const ForgotPasswordPage(),
       ),
-      GoRoute(
-        path: "/couple/code",
-        builder: (context, state) => const CoupleCodePage(),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            CoupleShellScaffold(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/couple',
+                builder: (context, state) => const CoupleDaysPage(),
+                routes: [
+                  GoRoute(
+                    path: 'code',
+                    builder: (context, state) => const CoupleCodePage(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: "/memories",
+                builder: (context, state) => const _ComingSoonTabPage(
+                  icon: Icons.photo_library_outlined,
+                  title: 'Ki niem',
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: "/dates",
+                builder: (context, state) => const _ComingSoonTabPage(
+                  icon: Icons.calendar_today_outlined,
+                  title: 'Lich hen',
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: "/settings",
+                builder: (context, state) => const _ComingSoonTabPage(
+                  icon: Icons.settings,
+                  title: 'Cài đặt',
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         path: "/couple/scan",
@@ -55,10 +105,6 @@ class AppRouter {
         path: "/couple/partner-info",
         builder: (context, state) =>
             PartnerInfoPage(partnerName: state.extra as String),
-      ),
-      GoRoute(
-        path: "/couple/get-days",
-        builder: (context, state) => const CoupleDaysPage(),
       ),
     ],
     redirect: (context, state) {
@@ -77,7 +123,7 @@ class AppRouter {
       }
 
       if (location == '/loading') {
-        return accessToken.isNotEmpty ? '/couple/code' : '/login';
+        return accessToken.isNotEmpty ? '/couple' : '/login';
       }
 
       if (accessToken.isEmpty && !isAuthPage) {
@@ -85,10 +131,47 @@ class AppRouter {
       }
 
       if (accessToken.isNotEmpty && isAuthPage) {
-        return '/couple/code';
+        return '/couple';
       }
 
       return null;
     },
   );
+}
+
+class _ComingSoonTabPage extends StatelessWidget {
+  const _ComingSoonTabPage({required this.icon, required this.title});
+
+  final IconData icon;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(title), centerTitle: true),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 48, color: const Color(0xFFA03B56)),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: 200,
+              child: ElevatedButton(
+                onPressed: () async {
+                  await context.read<AuthProvider>().logout();
+                },
+                child: const Text("Đăng Xuất"),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

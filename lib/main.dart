@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/core/storage/impl/shared_preferences_auth_storage.dart';
 import 'package:lovesync_mobile/providers/auth_provider.dart';
 import 'app_router.dart';
@@ -7,8 +8,15 @@ import 'package:provider/provider.dart';
 void main() {
   // runApp(const MyApp());
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => AuthProvider(SharedPreferencesAuthStorage())..load(),
+      MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(SharedPreferencesAuthStorage())..load(),
+        ),
+        Provider<DioClient>(
+          create: (_) => DioClient(SharedPreferencesAuthStorage()),
+        ),
+      ],
       child: const MyApp(),
     ),
   );

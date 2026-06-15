@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
@@ -5,6 +6,7 @@ import 'package:lovesync_mobile/features/couple/data/datasources/couple_remote_d
 import 'package:lovesync_mobile/features/couple/data/repositories/couple_repository_impl.dart';
 import 'package:lovesync_mobile/features/couple/domain/usecases/get_partner_by_code.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:provider/provider.dart';
 
 class CoupleScanPage extends StatefulWidget {
   const CoupleScanPage({super.key});
@@ -22,9 +24,7 @@ class _CoupleScanPageState extends State<CoupleScanPage>
   late final AnimationController _animationController;
   late final Animation<double> _scanAnimation;
 
-  final GetPartnerByCode _getPartnerByCode = GetPartnerByCode(
-    CoupleRepositoryImpl(CoupleRemoteDatasource(DioClient.instance.dio)),
-  );
+  late final GetPartnerByCode _getPartnerByCode;
 
   bool _isScanned = false;
 
@@ -41,6 +41,12 @@ class _CoupleScanPageState extends State<CoupleScanPage>
       begin: 10,
       end: 240,
     ).animate(_animationController);
+
+    _getPartnerByCode = GetPartnerByCode(
+      CoupleRepositoryImpl(
+        CoupleRemoteDatasource(context.read<DioClient>().dio),
+      ),
+    );
   }
 
   @override
@@ -59,24 +65,30 @@ class _CoupleScanPageState extends State<CoupleScanPage>
     debugPrint('QR Code: $code');
     try {
       final partner = await _getPartnerByCode.call(code);
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(
-      //     content: Text('Đối tác: ${partner.name}'),
-      //     behavior: SnackBarBehavior.floating,
-      //   ),
-      // );
+
       if (mounted) {
-        // Navigator.of(context).pop();
         context.push("/couple/partner-info", extra: partner.name);
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Lỗi khi lấy thông tin đối tác: $e'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      _isScanned = false;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Mã ghép đôi không hợp lệ'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Lỗi khi lấy thông tin đối phương'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
     }
   }
 
