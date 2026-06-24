@@ -1,4 +1,3 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -63,7 +62,10 @@ class _LoginPageState extends State<LoginPage> {
       final response = await _postLogin.call(email, password);
 
       if (mounted) {
-        await context.read<AuthProvider>().login(response.accessToken);
+        await context.read<AuthProvider>().login(
+          response.accessToken,
+          response.id,
+        );
         final fcmToken = await FirebaseMessaging.instance.getToken();
         await _postRegisterDevice.call(fcmToken ?? "");
         if (mounted) {
@@ -112,7 +114,7 @@ class _LoginPageState extends State<LoginPage> {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.pink.withOpacity(0.2),
+                      color: Colors.pink.withValues(alpha: 0.2),
                     ),
                     child: Icon(
                       Icons.favorite,
@@ -149,93 +151,81 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 40),
-                  Container(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text("Email"),
-                        const SizedBox(height: 5),
-                        TextField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: Colors.white,
-                            prefixIcon: const Icon(Icons.email_outlined),
-                            enabledBorder: const OutlineInputBorder(
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(10),
-                              ),
-                              borderSide: BorderSide(
-                                width: 2,
-                                color: Color.fromARGB(255, 247, 166, 193),
-                              ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Email"),
+                      const SizedBox(height: 5),
+                      TextField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          prefixIcon: const Icon(Icons.email_outlined),
+                          enabledBorder: const OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(10)),
+                            borderSide: BorderSide(
+                              width: 2,
+                              color: Color.fromARGB(255, 247, 166, 193),
                             ),
-                            focusedBorder: const OutlineInputBorder(
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(12),
-                              ),
-                              borderSide: BorderSide(
-                                color: Color.fromARGB(255, 255, 68, 131),
-                                width: 2,
-                              ),
-                            ),
-                            hintText: "Nhập email của bạn",
                           ),
+                          focusedBorder: const OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
+                            borderSide: BorderSide(
+                              color: Color.fromARGB(255, 255, 68, 131),
+                              width: 2,
+                            ),
+                          ),
+                          hintText: "Nhập email của bạn",
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 20),
-                  Container(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text("Mật khẩu"),
-                        const SizedBox(height: 5),
-                        TextField(
-                          controller: _passwordController,
-                          obscureText: !_isShowPassword,
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: Colors.white,
-                            prefixIcon: const Icon(Icons.lock_outlined),
-                            suffix: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _isShowPassword = !_isShowPassword;
-                                });
-                              },
-                              child: Icon(
-                                _isShowPassword
-                                    ? Icons.visibility
-                                    : Icons.visibility_off,
-                                size: 20,
-                              ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Mật khẩu"),
+                      const SizedBox(height: 5),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: !_isShowPassword,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          prefixIcon: const Icon(Icons.lock_outlined),
+                          suffix: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _isShowPassword = !_isShowPassword;
+                              });
+                            },
+                            child: Icon(
+                              _isShowPassword
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                              size: 20,
                             ),
-                            enabledBorder: const OutlineInputBorder(
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(10),
-                              ),
-                              borderSide: BorderSide(
-                                width: 2,
-                                color: Color.fromARGB(255, 247, 166, 193),
-                              ),
-                            ),
-                            focusedBorder: const OutlineInputBorder(
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(12),
-                              ),
-                              borderSide: BorderSide(
-                                color: Color.fromARGB(255, 255, 68, 131),
-                                width: 2,
-                              ),
-                            ),
-                            hintText: "Nhập mật khẩu của bạn",
                           ),
+                          enabledBorder: const OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(10)),
+                            borderSide: BorderSide(
+                              width: 2,
+                              color: Color.fromARGB(255, 247, 166, 193),
+                            ),
+                          ),
+                          focusedBorder: const OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
+                            borderSide: BorderSide(
+                              color: Color.fromARGB(255, 255, 68, 131),
+                              width: 2,
+                            ),
+                          ),
+                          hintText: "Nhập mật khẩu của bạn",
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 5),
                   Align(
@@ -352,7 +342,7 @@ class _LoginPageState extends State<LoginPage> {
               Container(
                 width: double.infinity,
                 height: double.infinity,
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
                 child: const Center(child: CircularProgressIndicator()),
               ),
           ],

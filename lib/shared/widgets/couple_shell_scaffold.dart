@@ -40,6 +40,7 @@ class _CoupleShellScaffoldState extends State<CoupleShellScaffold> {
       }
       await _getMyCouple();
     } on DioException catch (e) {
+      if (!mounted) return;
       if (e.response?.statusCode == 404) {
         setState(() => isCouple = false);
       } else {
@@ -70,13 +71,24 @@ class _CoupleShellScaffoldState extends State<CoupleShellScaffold> {
           ),
         ),
         actions: [
-          IconButton(
-            onPressed: () => {context.push('/couple/confirmation')},
-            icon: Icon(
-              Icons.notifications_none,
-              color: const Color(0xFF1A1C1D),
+          if (isCouple)
+            IconButton(
+              onPressed: () {
+                context.push('/message');
+              },
+              icon: const Icon(
+                Icons.message_outlined,
+                color: Color(0xFF1A1C1D),
+              ),
+            )
+          else
+            IconButton(
+              onPressed: () => {context.push('/couple/confirmation')},
+              icon: Icon(
+                Icons.notifications_none,
+                color: const Color(0xFF1A1C1D),
+              ),
             ),
-          ),
           const SizedBox(width: 12),
         ],
         centerTitle: true,
@@ -101,8 +113,8 @@ class _CoupleShellScaffoldState extends State<CoupleShellScaffold> {
                 label: 'Kĩ Niệm',
               ),
               NavigationDestination(
-                icon: Icon(Icons.calendar_today, color: Color(0xFF1A1C1D)),
-                label: 'Lịch hẹn',
+                icon: Icon(Icons.message, color: Color(0xFF1A1C1D)),
+                label: 'Nhắn Tin',
               ),
             ],
             const NavigationDestination(

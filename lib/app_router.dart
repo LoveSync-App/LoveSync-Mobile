@@ -10,6 +10,7 @@ import 'package:lovesync_mobile/features/couple/presentation/pages/couple_scan_p
 import 'package:lovesync_mobile/features/couple/presentation/pages/partner_info_page.dart';
 import 'package:lovesync_mobile/features/memory/presentation/pages/create_memory_page.dart';
 import 'package:lovesync_mobile/features/memory/presentation/pages/memory_list_page.dart';
+import 'package:lovesync_mobile/features/message/presentation/pages/realtime_message_page.dart';
 import 'package:lovesync_mobile/shared/widgets/couple_shell_scaffold.dart';
 import 'package:lovesync_mobile/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
@@ -73,6 +74,10 @@ class AppRouter {
         path: '/forgot-password',
         builder: (context, state) => const ForgotPasswordPage(),
       ),
+      GoRoute(
+        path: '/message',
+        builder: (context, state) => const RealtimeMessagePage(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             CoupleShellScaffold(navigationShell: navigationShell),
@@ -102,10 +107,11 @@ class AppRouter {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: "/dates",
+                // Ngày kỹ niệm
+                path: "/anniversaries",
                 builder: (context, state) => const _ComingSoonTabPage(
-                  icon: Icons.calendar_today_outlined,
-                  title: 'Lich hen',
+                  icon: Icons.calendar_today,
+                  title: 'Ngày Kỹ Niệm',
                 ),
               ),
             ],
