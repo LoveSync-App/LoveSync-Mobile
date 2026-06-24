@@ -8,6 +8,8 @@ import 'package:lovesync_mobile/features/couple/presentation/pages/couple_confir
 import 'package:lovesync_mobile/features/couple/presentation/pages/couple_days_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/couple_scan_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/partner_info_page.dart';
+import 'package:lovesync_mobile/features/memory/presentation/pages/create_memory_page.dart';
+import 'package:lovesync_mobile/features/memory/presentation/pages/memory_list_page.dart';
 import 'package:lovesync_mobile/shared/widgets/couple_shell_scaffold.dart';
 import 'package:lovesync_mobile/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
@@ -15,8 +17,6 @@ import 'package:provider/provider.dart';
 class AppRouter {
   late final AuthProvider _authProvider;
   AppRouter(this._authProvider);
-
-  
 
   GoRouter get router => GoRouter(
     refreshListenable: _authProvider,
@@ -60,6 +60,10 @@ class AppRouter {
         path: '/couple/confirmation',
         builder: (context, state) => const CoupleConfirmationPage(),
       ),
+      GoRoute(
+        path: '/memory/create',
+        builder: (context, state) => const CreateMemoryPage(),
+      ),
       GoRoute(path: '/login', builder: (context, state) => LoginPage()),
       GoRoute(
         path: '/register',
@@ -91,10 +95,7 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: "/memories",
-                builder: (context, state) => const _ComingSoonTabPage(
-                  icon: Icons.photo_library_outlined,
-                  title: 'Ki niem',
-                ),
+                builder: (context, state) => MemoryListPage(),
               ),
             ],
           ),

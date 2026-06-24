@@ -1,0 +1,41 @@
+import 'package:lovesync_mobile/features/memory/data/datasources/memory_remote_datasource.dart';
+import 'package:lovesync_mobile/features/memory/domain/entities/memory_response.dart';
+import 'package:lovesync_mobile/features/memory/domain/repositories/memory_repository.dart';
+
+class MemoryRepositoryImpl extends MemoryRepository {
+  final MemoryRemoteDatasource memoryRemoteDatasource;
+  MemoryRepositoryImpl(this.memoryRemoteDatasource);
+
+  @override
+  Future<List<MemoryResponse>> getAllMemories() async {
+    final memoryResponseModals = await memoryRemoteDatasource.getAllMemories();
+    final memoryResponses = memoryResponseModals
+        .map(
+          (memoryResponseModal) => MemoryResponse(
+            id: memoryResponseModal.id,
+            fileUrl: memoryResponseModal.fileUrl,
+            description: memoryResponseModal.description,
+            time: memoryResponseModal.time,
+          ),
+        )
+        .toList();
+    return memoryResponses;
+  }
+
+  @override
+  Future<void> createMemory({
+    required String fileUrl,
+    required String title,
+    required String description,
+    required String emotion,
+    required DateTime time,
+  }) async {
+    return await memoryRemoteDatasource.createMemory(
+      fileUrl: fileUrl,
+      title: title,
+      description: description,
+      emotion: emotion,
+      time: time,
+    );
+  }
+}
