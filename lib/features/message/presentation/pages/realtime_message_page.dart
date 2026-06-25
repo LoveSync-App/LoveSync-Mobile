@@ -1,8 +1,15 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
+import 'package:lovesync_mobile/features/couple/data/datasources/couple_remote_datasource.dart';
+import 'package:lovesync_mobile/features/couple/data/repositories/couple_repository_impl.dart';
+import 'package:lovesync_mobile/features/couple/domain/usecases/get_my_couple.dart';
 import 'package:lovesync_mobile/features/message/data/datasources/chat_remote_datasource.dart';
 import 'package:lovesync_mobile/features/message/data/datasources/chat_socket_datasource.dart';
 import 'package:lovesync_mobile/features/message/data/models/chat_message_model.dart';
@@ -10,10 +17,14 @@ import 'package:lovesync_mobile/features/message/data/repositories/chat_reposito
 import 'package:lovesync_mobile/features/message/domain/entities/chat_message.dart';
 import 'package:lovesync_mobile/features/message/domain/usecases/get_recent_messages.dart';
 import 'package:lovesync_mobile/features/message/domain/usecases/post_send_message.dart';
+import 'package:lovesync_mobile/features/message/presentation/widgets/empty_chat_placeholder.dart';
 import 'package:lovesync_mobile/features/message/presentation/widgets/message_bubble.dart';
 import 'package:lovesync_mobile/features/message/presentation/widgets/message_composer.dart';
 import 'package:lovesync_mobile/features/message/presentation/widgets/partner_chat_header.dart';
 import 'package:lovesync_mobile/providers/auth_provider.dart';
+import 'package:lovesync_mobile/shared/upload/data/datasources/upload_remote_datasource.dart';
+import 'package:lovesync_mobile/shared/upload/data/repositories/upload_repositoty_impl.dart';
+import 'package:lovesync_mobile/shared/upload/domain/usecases/upload_file.dart';
 import 'package:provider/provider.dart';
 
 class RealtimeMessagePage extends StatefulWidget {
@@ -29,15 +40,21 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
 
   late final PostSendMessage _postSendMessage;
   late final GetRecentMessages _getRecentMessages;
+  late final GetMyCouple _getMyCouple;
+  late final UploadFile _uploadFile;
+  final ImagePicker _imagePicker = ImagePicker();
   ChatSocketDatasource? _chatSocketDatasource;
   StreamSubscription<ChatMessageModel>? _messageSubscription;
   StreamSubscription<bool>? _connectionSubscription;
 
   final List<ChatMessage> _messages = [];
+  final List<File> _selectedAttachments = [];
   final Set<String> _messageIds = {};
   final Map<String, DateTime> _recentlySentMessages = {};
 
   String _currentUserId = '';
+  String _partnerName = '';
+  String _partnerAvatar = '';
   bool _isLoadingMessages = true;
   bool _isSending = false;
   bool _isSocketConnected = false;
@@ -51,8 +68,19 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
     );
     _postSendMessage = PostSendMessage(chatRepository);
     _getRecentMessages = GetRecentMessages(chatRepository);
+    _getMyCouple = GetMyCouple(
+      CoupleRepositoryImpl(
+        CoupleRemoteDatasource(context.read<DioClient>().dio),
+      ),
+    );
+    _uploadFile = UploadFile(
+      UploadRepositotyImpl(
+        UploadRemoteDatasource(context.read<DioClient>().dio),
+      ),
+    );
 
     _currentUserId = context.read<AuthProvider>().userId;
+    _loadCoupleInfo();
     _loadRecentMessages();
     _connectSocket();
   }
@@ -83,6 +111,21 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
     datasource.connect();
   }
 
+  Future<void> _loadCoupleInfo() async {
+    try {
+      final couple = await _getMyCouple();
+      if (!mounted) return;
+
+      setState(() {
+        _partnerName = couple.partnerName;
+        _partnerAvatar = couple.partnerAvatar;
+        _currentUserId = couple.userId;
+      });
+    } on DioException catch (_) {
+      // Chat can still work without partner profile details.
+    }
+  }
+
   Future<void> _loadRecentMessages() async {
     if (_currentUserId.isEmpty) {
       setState(() => _isLoadingMessages = false);
@@ -91,15 +134,19 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
 
     try {
       final messages = await _getRecentMessages(_currentUserId);
+      final sortedMessages = List<ChatMessage>.from(messages)
+        ..sort((a, b) => a.sentAt.compareTo(b.sentAt));
       if (!mounted) return;
 
       setState(() {
         _messages
           ..clear()
-          ..addAll(messages);
+          ..addAll(sortedMessages);
         _messageIds
           ..clear()
-          ..addAll(messages.map((message) => message.id).whereType<String>());
+          ..addAll(
+            sortedMessages.map((message) => message.id).whereType<String>(),
+          );
         _isLoadingMessages = false;
       });
       _scrollToBottom();
@@ -117,20 +164,34 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
 
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
-    if (text.isEmpty || _isSending) return;
+    final attachments = List<File>.from(_selectedAttachments);
+    if ((text.isEmpty && attachments.isEmpty) || _isSending) return;
 
     setState(() {
       _isSending = true;
-      _messages.add(
-        ChatMessage(text: text, sentAt: DateTime.now(), isMine: true),
-      );
-      _recentlySentMessages[text] = DateTime.now();
+      if (attachments.isEmpty) {
+        _messages.add(
+          ChatMessage(text: text, sentAt: DateTime.now(), isMine: true),
+        );
+        _recentlySentMessages[text] = DateTime.now();
+      }
       _messageController.clear();
     });
     _scrollToBottom();
 
     try {
-      await _postSendMessage(text);
+      final uploadedUrls = attachments.isEmpty
+          ? <String>[]
+          : await Future.wait(attachments.map(_uploadFile.call));
+
+      await _postSendMessage(
+        message: text.isEmpty ? null : text,
+        attachments: uploadedUrls,
+      );
+
+      if (mounted) {
+        setState(() => _selectedAttachments.clear());
+      }
     } on DioException catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -146,11 +207,47 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
     }
   }
 
+  Future<void> _pickFileAttachment() async {
+    if (_isSending) return;
+
+    final result = await FilePicker.pickFiles(allowMultiple: true);
+    if (result == null || !mounted) return;
+
+    final files = result.paths.whereType<String>().map(File.new).toList();
+    if (files.isEmpty) return;
+
+    setState(() {
+      _selectedAttachments.addAll(files);
+    });
+  }
+
+  Future<void> _pickImageAttachment() async {
+    if (_isSending) return;
+
+    final images = await _imagePicker.pickMultiImage(imageQuality: 80);
+    if (images.isEmpty || !mounted) return;
+
+    setState(() {
+      _selectedAttachments.addAll(images.map((image) => File(image.path)));
+    });
+  }
+
+  void _removeAttachment(File attachment) {
+    if (_isSending) return;
+    setState(() => _selectedAttachments.remove(attachment));
+  }
+
   void _handleIncomingMessage(ChatMessageModel message) {
-    if (message.text.isEmpty || _isDuplicateMessage(message)) return;
+    final hasMessageBody =
+        message.text.isNotEmpty || message.attachments.isNotEmpty;
+    if (!hasMessageBody || _isDuplicateMessage(message)) return;
 
     final isMine = message.senderId == _currentUserId;
-    if (isMine && _isEchoFromRecentSend(message.text)) return;
+    if (isMine &&
+        message.attachments.isEmpty &&
+        _isEchoFromRecentSend(message.text)) {
+      return;
+    }
 
     setState(() {
       final messageId = message.id;
@@ -178,6 +275,45 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
     return isRecent;
   }
 
+  List<_ChatTimelineItem> _buildTimelineItems() {
+    final items = <_ChatTimelineItem>[];
+    DateTime? currentDate;
+
+    for (var index = 0; index < _messages.length; index++) {
+      final message = _messages[index];
+      final messageDate = DateTime(
+        message.sentAt.year,
+        message.sentAt.month,
+        message.sentAt.day,
+      );
+
+      if (currentDate == null || !_isSameDate(currentDate, messageDate)) {
+        items.add(_DateDividerTimelineItem(messageDate));
+        currentDate = messageDate;
+      }
+
+      items.add(_MessageTimelineItem(message: message, messageIndex: index));
+    }
+
+    return items;
+  }
+
+  bool _shouldShowPartnerAvatar(int messageIndex) {
+    final message = _messages[messageIndex];
+    if (message.isMine) return false;
+    if (messageIndex == _messages.length - 1) return true;
+
+    final nextMessage = _messages[messageIndex + 1];
+    return nextMessage.isMine ||
+        !_isSameDate(message.sentAt, nextMessage.sentAt);
+  }
+
+  bool _isSameDate(DateTime first, DateTime second) {
+    return first.year == second.year &&
+        first.month == second.month &&
+        first.day == second.day;
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
@@ -191,33 +327,43 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
 
   @override
   Widget build(BuildContext context) {
+    final timelineItems = _buildTimelineItems();
+
     return Scaffold(
       backgroundColor: const Color(0xFFFFF7F9),
       body: SafeArea(
         child: Column(
           children: [
-            PartnerChatHeader(isConnected: _isSocketConnected),
+            PartnerChatHeader(
+              isConnected: _isSocketConnected,
+              partnerName: _partnerName,
+              partnerAvatar: _partnerAvatar,
+            ),
             Expanded(
               child: _isLoadingMessages
                   ? const Center(child: CircularProgressIndicator())
                   : _messages.isEmpty
-                  ? const _EmptyChatPlaceholder()
+                  ? const EmptyChatPlaceholder()
                   : ListView.separated(
                       controller: _scrollController,
                       padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
-                      itemCount: _messages.length,
+                      itemCount: timelineItems.length,
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: 12),
                       itemBuilder: (context, index) {
-                        final message = _messages[index];
-                        final showAvatar =
-                            !message.isMine &&
-                            (index == _messages.length - 1 ||
-                                _messages[index + 1].isMine);
+                        final item = timelineItems[index];
 
+                        if (item is _DateDividerTimelineItem) {
+                          return _DateDivider(date: item.date);
+                        }
+
+                        final messageItem = item as _MessageTimelineItem;
                         return MessageBubble(
-                          message: message,
-                          showPartnerAvatar: showAvatar,
+                          message: messageItem.message,
+                          partnerAvatar: _partnerAvatar,
+                          showPartnerAvatar: _shouldShowPartnerAvatar(
+                            messageItem.messageIndex,
+                          ),
                         );
                       },
                     ),
@@ -225,6 +371,10 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
             MessageComposer(
               controller: _messageController,
               onSend: _sendMessage,
+              onPickFile: _pickFileAttachment,
+              onPickImage: _pickImageAttachment,
+              selectedAttachments: _selectedAttachments,
+              onRemoveAttachment: _removeAttachment,
               isSending: _isSending,
             ),
           ],
@@ -234,20 +384,67 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
   }
 }
 
-class _EmptyChatPlaceholder extends StatelessWidget {
-  const _EmptyChatPlaceholder();
+sealed class _ChatTimelineItem {
+  const _ChatTimelineItem();
+}
+
+class _DateDividerTimelineItem extends _ChatTimelineItem {
+  const _DateDividerTimelineItem(this.date);
+
+  final DateTime date;
+}
+
+class _MessageTimelineItem extends _ChatTimelineItem {
+  const _MessageTimelineItem({
+    required this.message,
+    required this.messageIndex,
+  });
+
+  final ChatMessage message;
+  final int messageIndex;
+}
+
+class _DateDivider extends StatelessWidget {
+  const _DateDivider({required this.date});
+
+  final DateTime date;
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 32),
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.86),
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
         child: Text(
-          'Hãy gửi tin nhắn đầu tiên cho người ấy.',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 15, height: 1.4, color: Color(0xFF8A8F96)),
+          _formatDateLabel(date),
+          style: const TextStyle(
+            color: Color(0xFF8A8F96),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
+  }
+
+  static String _formatDateLabel(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final targetDate = DateTime(date.year, date.month, date.day);
+
+    if (targetDate == today) return 'Hôm nay';
+    if (targetDate == yesterday) return 'Hôm qua';
+    return DateFormat('dd/MM/yyyy').format(date);
   }
 }

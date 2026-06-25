@@ -6,12 +6,16 @@ class ChatMessageModel {
     required this.text,
     required this.sentAt,
     this.senderId,
+    this.attachments = const [],
+    this.type = ChatMessageType.text,
   });
 
   final String? id;
   final String text;
   final DateTime sentAt;
   final String? senderId;
+  final List<String> attachments;
+  final ChatMessageType type;
 
   factory ChatMessageModel.fromSocket(dynamic data) {
     final json = _asJson(data);
@@ -41,11 +45,20 @@ class ChatMessageModel {
         'userId',
         'from',
       ]),
+      attachments: _readAttachments(json),
+      type: _readType(json),
     );
   }
 
   ChatMessage toEntity({required bool isMine}) {
-    return ChatMessage(id: id, text: text, sentAt: sentAt, isMine: isMine);
+    return ChatMessage(
+      id: id,
+      text: text,
+      sentAt: sentAt,
+      isMine: isMine,
+      attachments: attachments,
+      type: type,
+    );
   }
 
   static Map<String, dynamic> _asJson(dynamic data) {
@@ -77,5 +90,45 @@ class ChatMessageModel {
       }
     }
     return DateTime.now();
+  }
+
+  static List<String> _readAttachments(Map<String, dynamic> json) {
+    final rawAttachments =
+        json['attachments'] ??
+        json['attachmentUrls'] ??
+        json['attachment_urls'];
+
+    if (rawAttachments is! List) return [];
+
+    return rawAttachments
+        .map((attachment) {
+          if (attachment is String) return attachment;
+          if (attachment is Map<String, dynamic>) {
+            return _readString(attachment, ['file_url', 'fileUrl', 'url']);
+          }
+          if (attachment is Map) {
+            final normalized = attachment.map(
+              (key, value) => MapEntry(key.toString(), value),
+            );
+            return _readString(normalized, ['file_url', 'fileUrl', 'url']);
+          }
+          return null;
+        })
+        .whereType<String>()
+        .where((url) => url.trim().isNotEmpty)
+        .toList();
+  }
+
+  static ChatMessageType _readType(Map<String, dynamic> json) {
+    final rawType = _readString(json, ['type', 'messageType', 'message_type']);
+    switch (rawType?.toUpperCase()) {
+      case 'IMAGE':
+        return ChatMessageType.image;
+      case 'VIDEO':
+        return ChatMessageType.video;
+      case 'TEXT':
+      default:
+        return ChatMessageType.text;
+    }
   }
 }

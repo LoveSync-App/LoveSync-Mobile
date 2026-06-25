@@ -5,7 +5,15 @@ class PostSendMessage {
 
   final ChatRepository repository;
 
-  Future<void> call(String message) async {
-    return await repository.sendMessage(message);
+  Future<void> call({
+    String? message,
+    List<String> attachments = const [],
+    List<String> attachmentUrls = const [],
+  }) async {
+    return await repository.sendMessage(
+      message: message,
+      attachments: attachments,
+      attachmentUrls: attachmentUrls,
+    );
   }
 }

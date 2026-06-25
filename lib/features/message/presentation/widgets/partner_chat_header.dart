@@ -2,9 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class PartnerChatHeader extends StatelessWidget {
-  const PartnerChatHeader({super.key, required this.isConnected});
+  const PartnerChatHeader({
+    super.key,
+    required this.isConnected,
+    required this.partnerName,
+    required this.partnerAvatar,
+  });
 
   final bool isConnected;
+  final String partnerName;
+  final String partnerAvatar;
 
   @override
   Widget build(BuildContext context) {
@@ -33,11 +40,14 @@ class PartnerChatHeader extends StatelessWidget {
           Stack(
             clipBehavior: Clip.none,
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 24,
-                backgroundImage: NetworkImage(
-                  'https://i.pravatar.cc/150?img=5',
-                ),
+                backgroundImage: partnerAvatar.isEmpty
+                    ? null
+                    : NetworkImage(partnerAvatar),
+                child: partnerAvatar.isEmpty
+                    ? const Icon(Icons.person, color: Color(0xFFA03B56))
+                    : null,
               ),
               Positioned(
                 right: -1,
@@ -61,11 +71,11 @@ class PartnerChatHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Người ấy',
+                Text(
+                  partnerName.isEmpty ? 'Nguoi ay' : partnerName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF222222),
@@ -73,8 +83,11 @@ class PartnerChatHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Đang hoạt động',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF6D7278)),
+                  isConnected ? 'Dang hoat dong' : 'Khong hoat dong',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF6D7278),
+                  ),
                 ),
               ],
             ),

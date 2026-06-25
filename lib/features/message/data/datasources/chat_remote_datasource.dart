@@ -20,7 +20,19 @@ class ChatRemoteDatasource {
         .toList();
   }
 
-  Future<void> sendMessage(String message) async {
-    await dio.post('/chat/send-message', data: {'message': message});
+  Future<void> sendMessage({
+    String? message,
+    List<String> attachments = const [],
+    List<String> attachmentUrls = const [],
+  }) async {
+    await dio.post(
+      '/chat/send-message',
+      data: {
+        if (message != null && message.trim().isNotEmpty)
+          'message': message.trim(),
+        if (attachments.isNotEmpty) 'attachments': attachments,
+        if (attachmentUrls.isNotEmpty) 'attachmentUrls': attachmentUrls,
+      },
+    );
   }
 }

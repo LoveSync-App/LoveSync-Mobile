@@ -45,9 +45,9 @@ class _CoupleDaysPageState extends State<CoupleDaysPage>
       if (mounted) {
         setState(() {
           userName = couple.userName;
-          // userAvatar = couple.userAvatar;
+          userAvatar = couple.userAvatar;
           partnerName = couple.partnerName;
-          // partnerAvatar = couple.partnerAvatar;
+          partnerAvatar = couple.partnerAvatar;
         });
       }
     } on DioException catch (e) {

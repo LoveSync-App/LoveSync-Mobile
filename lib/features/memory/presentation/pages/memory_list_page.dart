@@ -67,19 +67,22 @@ class _MemoryListPageState extends State<MemoryListPage> {
 
     try {
       memories = await _getAllMemories();
+      memories.sort((a, b) => b.time.compareTo(a.time));
       if (mounted) {
         setState(() {});
       }
-    } on DioException catch (e) {
+    } on DioException {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Lỗi khi tải kỷ niệm')));
       }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -164,7 +167,9 @@ class _MemoryListPageState extends State<MemoryListPage> {
                                   decoration: BoxDecoration(
                                     border: Border(
                                       left: BorderSide(
-                                        color: Colors.grey.withOpacity(0.3),
+                                        color: Colors.grey.withValues(
+                                          alpha: 0.3,
+                                        ),
                                         width: 2,
                                       ),
                                     ),
@@ -186,7 +191,9 @@ class _MemoryListPageState extends State<MemoryListPage> {
                                       ), // Căn node đều với lề trên của Card
                                       child: Center(
                                         child: isFirstInMonth
-                                            ? _buildMonthNode(currentItem.time)
+                                            ? _buildMonthYearNode(
+                                                currentItem.time,
+                                              )
                                             : _buildDotNode(),
                                       ),
                                     ),
@@ -221,8 +228,48 @@ class _MemoryListPageState extends State<MemoryListPage> {
 
   // --- CÁC WIDGET THÀNH PHẦN (Giữ nguyên cấu trúc của bạn nhưng tối ưu lại kích thước) ---
 
+  Widget _buildMonthYearNode(DateTime date) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildMonthNode(date),
+        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFF0C8D2)),
+          ),
+          child: Text(
+            date.year.toString(),
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFFA03B56),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildMonthNode(DateTime date) {
-    String monthText = DateFormat('MMM').format(date);
+    final monthVn = [
+      "T1",
+      "T2",
+      "T3",
+      "T4",
+      "T5",
+      "T6",
+      "T7",
+      "T8",
+      "T9",
+      "T10",
+      "T11",
+      "T12",
+    ];
+    String monthText = monthVn[date.month - 1]; // Lấy tháng theo index (0-11)
     return Container(
       width: 40,
       height: 40,
@@ -231,7 +278,7 @@ class _MemoryListPageState extends State<MemoryListPage> {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Colors.pink.shade300.withOpacity(0.3),
+            color: Colors.pink.shade300.withValues(alpha: 0.3),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -272,7 +319,7 @@ class _MemoryListPageState extends State<MemoryListPage> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -318,7 +365,7 @@ class _MemoryListPageState extends State<MemoryListPage> {
               ),
               const SizedBox(width: 4),
               Text(
-                DateFormat('MMMM dd, yyyy').format(item.time),
+                DateFormat('dd/MM/yyyy').format(item.time),
                 style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
               ),
             ],

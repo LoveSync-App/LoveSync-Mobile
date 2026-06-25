@@ -19,7 +19,15 @@ class ChatRepositoryImpl extends ChatRepository {
   }
 
   @override
-  Future<void> sendMessage(String message) async {
-    return await chatRemoteDatasource.sendMessage(message);
+  Future<void> sendMessage({
+    String? message,
+    List<String> attachments = const [],
+    List<String> attachmentUrls = const [],
+  }) async {
+    return await chatRemoteDatasource.sendMessage(
+      message: message,
+      attachments: attachments,
+      attachmentUrls: attachmentUrls,
+    );
   }
 }

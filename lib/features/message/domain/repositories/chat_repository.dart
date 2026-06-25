@@ -2,5 +2,9 @@ import 'package:lovesync_mobile/features/message/domain/entities/chat_message.da
 
 abstract class ChatRepository {
   Future<List<ChatMessage>> getRecentMessages(String currentUserId);
-  Future<void> sendMessage(String message);
+  Future<void> sendMessage({
+    String? message,
+    List<String> attachments = const [],
+    List<String> attachmentUrls = const [],
+  });
 }
