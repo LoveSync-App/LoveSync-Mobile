@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/core/storage/impl/shared_preferences_auth_storage.dart';
+import 'package:lovesync_mobile/features/call/data/datasources/call_remote_datasource.dart';
+import 'package:lovesync_mobile/features/call/presentation/providers/call_provider.dart';
+import 'package:lovesync_mobile/features/call/presentation/widgets/call_overlay.dart';
 import 'package:lovesync_mobile/providers/auth_provider.dart';
 import 'app_router.dart';
 import 'package:provider/provider.dart';
@@ -15,11 +18,7 @@ void main() async {
 
   await Firebase.initializeApp();
 
-  await FirebaseMessaging.instance.requestPermission();
-
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {});
-
-  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {});
+  await _requestNotificationPermission();
 
   runApp(
     MultiProvider(
@@ -28,11 +27,42 @@ void main() async {
           create: (_) => AuthProvider(SharedPreferencesAuthStorage())..load(),
         ),
         Provider<DioClient>(
-          create: (_) => DioClient(SharedPreferencesAuthStorage()),
+          create: (context) => DioClient(
+            SharedPreferencesAuthStorage(),
+            onUnauthorized: context.read<AuthProvider>().logout,
+          ),
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, CallProvider>(
+          create: (context) =>
+              CallProvider(CallRemoteDatasource(context.read<DioClient>().dio)),
+          update: (_, authProvider, callProvider) {
+            callProvider?.updateAuth(
+              token: authProvider.accessToken,
+              userId: authProvider.userId,
+            );
+            return callProvider!;
+          },
         ),
       ],
       child: const MyApp(),
     ),
+  );
+}
+
+Future<void> _requestNotificationPermission() async {
+  final messaging = FirebaseMessaging.instance;
+
+  await messaging.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+    provisional: false,
+  );
+
+  await messaging.setForegroundNotificationPresentationOptions(
+    alert: true,
+    badge: true,
+    sound: true,
   );
 }
 
@@ -48,6 +78,8 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.blue),
       routerConfig: AppRouter(authProvider).router,
+      builder: (context, child) =>
+          CallOverlay(child: child ?? const SizedBox.shrink()),
     );
   }
 }

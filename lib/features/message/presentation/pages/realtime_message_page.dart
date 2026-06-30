@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
+import 'package:lovesync_mobile/features/call/presentation/providers/call_provider.dart';
 import 'package:lovesync_mobile/features/couple/data/datasources/couple_remote_datasource.dart';
 import 'package:lovesync_mobile/features/couple/data/repositories/couple_repository_impl.dart';
 import 'package:lovesync_mobile/features/couple/domain/usecases/get_my_couple.dart';
@@ -156,6 +157,48 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Không tải được tin nhắn gần đây.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _startAudioCall() async {
+    await _startCall(isVideo: false);
+  }
+
+  Future<void> _startVideoCall() async {
+    await _startCall(isVideo: true);
+  }
+
+  Future<void> _startCall({required bool isVideo}) async {
+    try {
+      final callProvider = context.read<CallProvider>();
+      if (isVideo) {
+        await callProvider.startVideoCall(
+          partnerName: _partnerName,
+          partnerAvatar: _partnerAvatar,
+        );
+      } else {
+        await callProvider.startAudioCall(
+          partnerName: _partnerName,
+          partnerAvatar: _partnerAvatar,
+        );
+      }
+    } on DioException catch (error) {
+      if (!mounted) return;
+      final data = error.response?.data;
+      final message = data is Map
+          ? (data['message'] ?? data['error'])?.toString()
+          : null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            message ??
+                (isVideo
+                    ? 'Không thể bắt đầu cuộc gọi video.'
+                    : 'Không thể bắt đầu cuộc gọi thoại.'),
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -338,6 +381,8 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
               isConnected: _isSocketConnected,
               partnerName: _partnerName,
               partnerAvatar: _partnerAvatar,
+              onAudioCall: _startAudioCall,
+              onVideoCall: _startVideoCall,
             ),
             Expanded(
               child: _isLoadingMessages

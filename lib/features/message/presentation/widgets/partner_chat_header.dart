@@ -7,11 +7,15 @@ class PartnerChatHeader extends StatelessWidget {
     required this.isConnected,
     required this.partnerName,
     required this.partnerAvatar,
+    required this.onAudioCall,
+    required this.onVideoCall,
   });
 
   final bool isConnected;
   final String partnerName;
   final String partnerAvatar;
+  final VoidCallback onAudioCall;
+  final VoidCallback onVideoCall;
 
   @override
   Widget build(BuildContext context) {
@@ -93,12 +97,12 @@ class PartnerChatHeader extends StatelessWidget {
             ),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: onAudioCall,
             icon: const Icon(Icons.call_outlined),
             color: const Color(0xFFA03B56),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: onVideoCall,
             icon: const Icon(Icons.videocam_outlined),
             color: const Color(0xFFA03B56),
           ),
