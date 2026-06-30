@@ -113,13 +113,13 @@ class _CoupleShellScaffoldState extends State<CoupleShellScaffold> {
                 label: 'Kĩ Niệm',
               ),
               NavigationDestination(
-                icon: Icon(Icons.message, color: Color(0xFF1A1C1D)),
-                label: 'Nhắn Tin',
+                icon: Icon(Icons.favorite_outline, color: Color(0xFF1A1C1D)),
+                label: 'Đặc Biệt',
               ),
             ],
             const NavigationDestination(
-              icon: Icon(Icons.settings_outlined, color: Color(0xFF1A1C1D)),
-              label: 'Cài Đặt',
+              icon: Icon(Icons.person_outline, color: Color(0xFF1A1C1D)),
+              label: 'Cá Nhân',
             ),
           ],
         ),

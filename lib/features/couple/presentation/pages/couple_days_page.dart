@@ -42,73 +42,32 @@ class _CoupleDaysPageState extends State<CoupleDaysPage>
 
       final couple = await _getMyCouple.call();
 
-      if (mounted) {
-        setState(() {
-          userName = couple.userName;
-          userAvatar = couple.userAvatar;
-          partnerName = couple.partnerName;
-          partnerAvatar = couple.partnerAvatar;
-        });
-      }
-    } on DioException catch (e) {
-      if (e.response?.statusCode != 404) {
-        if (mounted) {
-          context.go("/couple/code");
-        }
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        userName = couple.userName;
+        userAvatar = couple.userAvatar;
+        partnerName = couple.partnerName;
+        partnerAvatar = couple.partnerAvatar;
+      });
+
+      await _fetchCoupleDays();
+      if (mounted) setState(() => isLoading = false);
+    } on DioException {
+      if (mounted) context.go("/couple/code");
+    } catch (_) {
+      if (mounted) context.go("/couple/code");
     }
   }
 
-  void _fetchCoupleDays() async {
-    try {
-      setState(() {
-        isLoading = true;
-      });
+  Future<void> _fetchCoupleDays() async {
+    final coupleDay = await _getMyCoupleDays.call();
+    if (!mounted) return;
 
-      final coupleDay = await _getMyCoupleDays.call();
-
-      if (mounted) {
-        setState(() {
-          days = coupleDay.loveDays;
-          progress = (days % 365) / 365;
-        });
-      }
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
-        if (mounted) {
-          // ScaffoldMessenger.of(context).showSnackBar(
-          //   const SnackBar(
-          //     content: Text(
-          //       'Bạn chưa có ngày yêu nhau nào, hãy bắt đầu hành trình cùng nhau nào!',
-          //     ),
-          //     behavior: SnackBarBehavior.floating,
-          //   ),
-          // );
-          context.go("/couple/code");
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Lỗi khi lấy số ngày yêu nhau: $e'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
-    }
+    setState(() {
+      days = coupleDay.loveDays;
+      progress = (days % 365) / 365;
+    });
   }
 
   @override
@@ -139,7 +98,6 @@ class _CoupleDaysPageState extends State<CoupleDaysPage>
       ),
     );
 
-    _fetchCoupleDays();
     _fetchCouple();
   }
 
@@ -177,6 +135,10 @@ class _CoupleDaysPageState extends State<CoupleDaysPage>
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Container(
       width: double.infinity,
       child: Column(

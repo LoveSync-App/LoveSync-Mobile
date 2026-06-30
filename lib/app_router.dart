@@ -11,6 +11,7 @@ import 'package:lovesync_mobile/features/couple/presentation/pages/partner_info_
 import 'package:lovesync_mobile/features/memory/presentation/pages/create_memory_page.dart';
 import 'package:lovesync_mobile/features/memory/presentation/pages/memory_list_page.dart';
 import 'package:lovesync_mobile/features/message/presentation/pages/realtime_message_page.dart';
+import 'package:lovesync_mobile/features/user/presentation/pages/profile_page.dart';
 import 'package:lovesync_mobile/shared/widgets/couple_shell_scaffold.dart';
 import 'package:lovesync_mobile/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
@@ -120,10 +121,7 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: "/settings",
-                builder: (context, state) => const _ComingSoonTabPage(
-                  icon: Icons.settings,
-                  title: 'Cài đặt',
-                ),
+                builder: (context, state) => const ProfilePage(),
               ),
             ],
           ),
