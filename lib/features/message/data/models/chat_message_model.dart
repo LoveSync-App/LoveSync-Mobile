@@ -8,6 +8,8 @@ class ChatMessageModel {
     this.senderId,
     this.attachments = const [],
     this.type = ChatMessageType.text,
+    this.entityId,
+    this.payload = const {},
   });
 
   final String? id;
@@ -16,6 +18,8 @@ class ChatMessageModel {
   final String? senderId;
   final List<String> attachments;
   final ChatMessageType type;
+  final String? entityId;
+  final Map<String, dynamic> payload;
 
   factory ChatMessageModel.fromSocket(dynamic data) {
     final json = _asJson(data);
@@ -47,6 +51,8 @@ class ChatMessageModel {
       ]),
       attachments: _readAttachments(json),
       type: _readType(json),
+      entityId: _readString(json, ['entityId', 'entity_id']),
+      payload: _asJson(json['payload']),
     );
   }
 
@@ -58,6 +64,8 @@ class ChatMessageModel {
       isMine: isMine,
       attachments: attachments,
       type: type,
+      entityId: entityId,
+      payload: payload,
     );
   }
 
@@ -72,7 +80,12 @@ class ChatMessageModel {
   static String? _readString(Map<String, dynamic> json, List<String> keys) {
     for (final key in keys) {
       final value = json[key];
-      if (value != null) return value.toString();
+      if (value is Map) {
+        final id = value['_id'] ?? value['id'];
+        if (id != null) return id.toString();
+      } else if (value != null) {
+        return value.toString();
+      }
     }
     return null;
   }
@@ -126,9 +139,41 @@ class ChatMessageModel {
         return ChatMessageType.image;
       case 'VIDEO':
         return ChatMessageType.video;
+      case 'CALL':
+        return ChatMessageType.call;
+      case 'LOCATION':
+        return ChatMessageType.location;
       case 'TEXT':
       default:
         return ChatMessageType.text;
     }
+  }
+}
+
+class ChatPageModel {
+  const ChatPageModel({
+    required this.items,
+    required this.hasMore,
+    this.nextCursor,
+  });
+
+  final List<ChatMessageModel> items;
+  final bool hasMore;
+  final String? nextCursor;
+
+  factory ChatPageModel.fromJson(dynamic data) {
+    final json = ChatMessageModel._asJson(data);
+    final nested = json['data'];
+    final pageJson = nested is Map ? ChatMessageModel._asJson(nested) : json;
+    final rawItems = pageJson['items'];
+    final pageInfo = ChatMessageModel._asJson(pageJson['pageInfo']);
+
+    return ChatPageModel(
+      items: rawItems is List
+          ? rawItems.map(ChatMessageModel.fromSocket).toList()
+          : const [],
+      hasMore: pageInfo['hasMore'] == true,
+      nextCursor: pageInfo['nextCursor']?.toString(),
+    );
   }
 }

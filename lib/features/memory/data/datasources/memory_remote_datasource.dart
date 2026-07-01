@@ -15,19 +15,15 @@ class MemoryRemoteDatasource {
 
   Future<void> createMemory({
     required String fileUrl,
-    required String title,
     required String description,
-    required String emotion,
     required DateTime time,
   }) async {
     await dio.post(
       '/memories',
       data: {
         'file_url': fileUrl,
-        'title': title,
         'description': description,
-        'emotion': emotion,
-        // 'time': time.toIso8601String(),
+        'time': time.toUtc().toIso8601String(),
       },
     );
   }

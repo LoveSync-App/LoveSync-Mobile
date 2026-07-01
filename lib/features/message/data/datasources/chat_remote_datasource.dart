@@ -6,18 +6,18 @@ class ChatRemoteDatasource {
 
   final Dio dio;
 
-  Future<List<ChatMessageModel>> getRecentMessages() async {
-    final response = await dio.get('/chat');
-    final responseData = response.data;
-    final rawMessages = responseData is Map<String, dynamic>
-        ? responseData['data']
-        : responseData;
-
-    if (rawMessages is! List) return [];
-
-    return rawMessages
-        .map((message) => ChatMessageModel.fromSocket(message))
-        .toList();
+  Future<ChatPageModel> getTimelinePage({
+    String? cursor,
+    int limit = 20,
+  }) async {
+    final response = await dio.get(
+      '/chat',
+      queryParameters: {
+        'limit': limit,
+        if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
+      },
+    );
+    return ChatPageModel.fromJson(response.data);
   }
 
   Future<void> sendMessage({

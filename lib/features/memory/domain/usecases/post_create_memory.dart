@@ -4,18 +4,14 @@ class PostCreateMemory {
   final MemoryRepository repository;
   PostCreateMemory(this.repository);
 
-  Future<void> call(
-    String fileUrl,
-    String title,
-    String description,
-    String emotion,
-    DateTime time,
-  ) async {
+  Future<void> call({
+    required String fileUrl,
+    required String description,
+    required DateTime time,
+  }) async {
     return await repository.createMemory(
       fileUrl: fileUrl,
-      title: title,
       description: description,
-      emotion: emotion,
       time: time,
     );
   }

@@ -8,7 +8,7 @@ import 'package:lovesync_mobile/features/couple/presentation/pages/couple_confir
 import 'package:lovesync_mobile/features/couple/presentation/pages/couple_days_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/couple_scan_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/partner_info_page.dart';
-import 'package:lovesync_mobile/features/memory/presentation/pages/create_memory_page.dart';
+import 'package:lovesync_mobile/features/memory/presentation/pages/memory_capture_page.dart';
 import 'package:lovesync_mobile/features/memory/presentation/pages/memory_list_page.dart';
 import 'package:lovesync_mobile/features/message/presentation/pages/realtime_message_page.dart';
 import 'package:lovesync_mobile/features/user/presentation/pages/profile_page.dart';
@@ -64,7 +64,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/memory/create',
-        builder: (context, state) => const CreateMemoryPage(),
+        builder: (context, state) => const MemoryCapturePage(),
       ),
       GoRoute(path: '/login', builder: (context, state) => LoginPage()),
       GoRoute(

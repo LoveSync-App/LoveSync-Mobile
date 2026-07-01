@@ -25,16 +25,12 @@ class MemoryRepositoryImpl extends MemoryRepository {
   @override
   Future<void> createMemory({
     required String fileUrl,
-    required String title,
     required String description,
-    required String emotion,
     required DateTime time,
   }) async {
     return await memoryRemoteDatasource.createMemory(
       fileUrl: fileUrl,
-      title: title,
       description: description,
-      emotion: emotion,
       time: time,
     );
   }

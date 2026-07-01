@@ -21,6 +21,9 @@ class _MemoryListPageState extends State<MemoryListPage> {
   late final GetAllMemories _getAllMemories;
 
   bool _isLoading = false;
+  bool _isFetching = false;
+  bool _hasLoadedOnce = false;
+  bool _wasVisible = false;
 
   //  List<MemoryModel> mockMemories = [
   // MemoryModel(
@@ -60,17 +63,29 @@ class _MemoryListPageState extends State<MemoryListPage> {
     _fetchMemories();
   }
 
-  Future<void> _fetchMemories() async {
-    setState(() {
-      _isLoading = true; // Bật skeleton loading
-    });
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final isVisible = TickerMode.of(context);
+    if (isVisible && !_wasVisible && _hasLoadedOnce) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _fetchMemories(showLoading: false);
+      });
+    }
+    _wasVisible = isVisible;
+  }
+
+  Future<void> _fetchMemories({bool showLoading = true}) async {
+    if (_isFetching) return;
+    _isFetching = true;
+    if (showLoading && mounted) {
+      setState(() => _isLoading = true);
+    }
 
     try {
-      memories = await _getAllMemories();
-      memories.sort((a, b) => b.time.compareTo(a.time));
-      if (mounted) {
-        setState(() {});
-      }
+      final loadedMemories = await _getAllMemories();
+      loadedMemories.sort((a, b) => b.time.compareTo(a.time));
+      if (mounted) setState(() => memories = loadedMemories);
     } on DioException {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -78,11 +93,22 @@ class _MemoryListPageState extends State<MemoryListPage> {
         ).showSnackBar(SnackBar(content: Text('Lỗi khi tải kỷ niệm')));
       }
     } finally {
+      _isFetching = false;
+      _hasLoadedOnce = true;
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
+    }
+  }
+
+  Future<void> _refreshMemories() {
+    return _fetchMemories(showLoading: false);
+  }
+
+  Future<void> _openShareMemory() async {
+    final created = await context.push<bool>('/memory/create');
+    if (created == true && mounted) {
+      await _fetchMemories(showLoading: false);
     }
   }
 
@@ -107,29 +133,48 @@ class _MemoryListPageState extends State<MemoryListPage> {
             )
           : Stack(
               children: [
-                (memories.isEmpty && !_isLoading)
-                    ? const Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.photo_library_outlined,
-                              size: 64,
-                              color: Colors.grey,
-                            ),
-                            SizedBox(height: 16),
-                            Text(
-                              'Chưa có kỷ niệm nào',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey,
+                RefreshIndicator(
+                  onRefresh: _refreshMemories,
+                  child: memories.isEmpty
+                      ? const CustomScrollView(
+                          physics: AlwaysScrollableScrollPhysics(),
+                          slivers: [
+                            SliverFillRemaining(
+                              hasScrollBody: false,
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.photo_library_outlined,
+                                      size: 64,
+                                      color: Colors.grey,
+                                    ),
+                                    SizedBox(height: 16),
+                                    Text(
+                                      'Chưa có kỷ niệm nào',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      'Kéo xuống để tải lại',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: memories.length,
+                        )
+                      : ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                         itemCount: memories.length,
                         padding: const EdgeInsets.symmetric(
                           vertical: 24,
                           horizontal: 16,
@@ -208,16 +253,15 @@ class _MemoryListPageState extends State<MemoryListPage> {
                               ),
                             ],
                           );
-                        },
-                      ),
+                          },
+                        ),
+                ),
                 // Nút Thêm Mới Kỷ Niệm
                 Positioned(
                   bottom: 16,
                   right: 16,
                   child: FloatingActionButton(
-                    onPressed: () {
-                      if (mounted) context.push('/memory/create');
-                    },
+                    onPressed: _openShareMemory,
                     child: const Icon(Icons.add),
                   ),
                 ),
@@ -346,26 +390,21 @@ class _MemoryListPageState extends State<MemoryListPage> {
           ),
           const SizedBox(height: 12),
           Text(
-            // item.title,
-            "Hard Coded Title", // Tạm hardcode vì API chưa có trường title, sau này sửa lại khi backend hoàn thiện
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Text(
             item.description,
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+            style: const TextStyle(
+              fontSize: 15,
+              height: 1.4,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF363238),
+            ),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Icon(
-                Icons.calendar_month_outlined,
-                size: 14,
-                color: Colors.grey.shade400,
-              ),
+              Icon(Icons.schedule, size: 14, color: Colors.grey.shade400),
               const SizedBox(width: 4),
               Text(
-                DateFormat('dd/MM/yyyy').format(item.time),
+                DateFormat('HH:mm, dd/MM/yyyy').format(item.time.toLocal()),
                 style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
               ),
             ],

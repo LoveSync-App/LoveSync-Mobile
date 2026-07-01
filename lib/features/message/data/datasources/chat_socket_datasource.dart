@@ -1,24 +1,31 @@
 import 'dart:async';
 
+import 'package:lovesync_mobile/core/constants/api_constants.dart';
 import 'package:lovesync_mobile/features/message/data/models/chat_message_model.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
+
+class ChatSocketEvent {
+  const ChatSocketEvent({required this.message, required this.isUpdate});
+
+  final ChatMessageModel message;
+  final bool isUpdate;
+}
 
 class ChatSocketDatasource {
   ChatSocketDatasource({required this.token});
 
-  static const String _socketUrl =
-      'https://bilateral-misunderstandingly-veola.ngrok-free.dev/chat';
   static const String _newMessageEvent = 'message:new';
+  static const String _updatedMessageEvent = 'message:updated';
 
   final String token;
-  final StreamController<ChatMessageModel> _messageController =
-      StreamController<ChatMessageModel>.broadcast();
+  final StreamController<ChatSocketEvent> _messageController =
+      StreamController<ChatSocketEvent>.broadcast();
   final StreamController<bool> _connectionController =
       StreamController<bool>.broadcast();
 
   io.Socket? _socket;
 
-  Stream<ChatMessageModel> get messages => _messageController.stream;
+  Stream<ChatSocketEvent> get messages => _messageController.stream;
   Stream<bool> get connectionChanges => _connectionController.stream;
 
   bool get isConnected => _socket?.connected ?? false;
@@ -27,7 +34,7 @@ class ChatSocketDatasource {
     disconnect();
 
     _socket = io.io(
-      _socketUrl,
+      '${ApiConstants.socketOrigin}/chat',
       io.OptionBuilder()
           .setTransports(['websocket'])
           .setAuth({'token': token})
@@ -37,7 +44,14 @@ class ChatSocketDatasource {
           .build(),
     );
 
-    _socket?.on(_newMessageEvent, _handleMessage);
+    _socket?.on(
+      _newMessageEvent,
+      (data) => _handleMessage(data, isUpdate: false),
+    );
+    _socket?.on(
+      _updatedMessageEvent,
+      (data) => _handleMessage(data, isUpdate: true),
+    );
     _socket?.on('chat:error', (_) => _setConnected(false));
     _socket?.onConnect((_) => _setConnected(true));
     _socket?.onDisconnect((_) => _setConnected(false));
@@ -51,6 +65,7 @@ class ChatSocketDatasource {
     if (socket == null) return;
 
     socket.off(_newMessageEvent);
+    socket.off(_updatedMessageEvent);
     socket.off('chat:error');
 
     socket.dispose();
@@ -64,9 +79,14 @@ class ChatSocketDatasource {
     await _connectionController.close();
   }
 
-  void _handleMessage(dynamic data) {
+  void _handleMessage(dynamic data, {required bool isUpdate}) {
     if (_messageController.isClosed) return;
-    _messageController.add(ChatMessageModel.fromSocket(data));
+    _messageController.add(
+      ChatSocketEvent(
+        message: ChatMessageModel.fromSocket(data),
+        isUpdate: isUpdate,
+      ),
+    );
   }
 
   void _setConnected(bool value) {

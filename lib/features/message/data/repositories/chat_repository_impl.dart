@@ -8,14 +8,25 @@ class ChatRepositoryImpl extends ChatRepository {
   final ChatRemoteDatasource chatRemoteDatasource;
 
   @override
-  Future<List<ChatMessage>> getRecentMessages(String currentUserId) async {
-    final messages = await chatRemoteDatasource.getRecentMessages();
-    return messages
-        .map(
-          (message) =>
-              message.toEntity(isMine: message.senderId == currentUserId),
-        )
-        .toList();
+  Future<ChatTimelinePage> getTimelinePage(
+    String currentUserId, {
+    String? cursor,
+    int limit = 20,
+  }) async {
+    final page = await chatRemoteDatasource.getTimelinePage(
+      cursor: cursor,
+      limit: limit,
+    );
+    return ChatTimelinePage(
+      items: page.items
+          .map(
+            (message) =>
+                message.toEntity(isMine: message.senderId == currentUserId),
+          )
+          .toList(),
+      hasMore: page.hasMore,
+      nextCursor: page.nextCursor,
+    );
   }
 
   @override

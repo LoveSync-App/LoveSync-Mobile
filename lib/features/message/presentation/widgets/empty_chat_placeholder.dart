@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class EmptyChatPlaceholder extends StatelessWidget {
-  const EmptyChatPlaceholder();
+  const EmptyChatPlaceholder({super.key});
 
   @override
   Widget build(BuildContext context) {

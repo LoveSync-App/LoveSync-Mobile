@@ -13,7 +13,6 @@ import 'package:lovesync_mobile/features/couple/data/repositories/couple_reposit
 import 'package:lovesync_mobile/features/couple/domain/usecases/get_my_couple.dart';
 import 'package:lovesync_mobile/features/message/data/datasources/chat_remote_datasource.dart';
 import 'package:lovesync_mobile/features/message/data/datasources/chat_socket_datasource.dart';
-import 'package:lovesync_mobile/features/message/data/models/chat_message_model.dart';
 import 'package:lovesync_mobile/features/message/data/repositories/chat_repository_impl.dart';
 import 'package:lovesync_mobile/features/message/domain/entities/chat_message.dart';
 import 'package:lovesync_mobile/features/message/domain/usecases/get_recent_messages.dart';
@@ -45,7 +44,7 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
   late final UploadFile _uploadFile;
   final ImagePicker _imagePicker = ImagePicker();
   ChatSocketDatasource? _chatSocketDatasource;
-  StreamSubscription<ChatMessageModel>? _messageSubscription;
+  StreamSubscription<ChatSocketEvent>? _messageSubscription;
   StreamSubscription<bool>? _connectionSubscription;
 
   final List<ChatMessage> _messages = [];
@@ -59,6 +58,9 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
   bool _isLoadingMessages = true;
   bool _isSending = false;
   bool _isSocketConnected = false;
+  bool _isLoadingMore = false;
+  bool _hasMoreMessages = true;
+  String? _nextCursor;
 
   @override
   void initState() {
@@ -81,6 +83,7 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
     );
 
     _currentUserId = context.read<AuthProvider>().userId;
+    _scrollController.addListener(_handleScroll);
     _loadCoupleInfo();
     _loadRecentMessages();
     _connectSocket();
@@ -134,9 +137,8 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
     }
 
     try {
-      final messages = await _getRecentMessages(_currentUserId);
-      final sortedMessages = List<ChatMessage>.from(messages)
-        ..sort((a, b) => a.sentAt.compareTo(b.sentAt));
+      final page = await _getRecentMessages(_currentUserId);
+      final sortedMessages = List<ChatMessage>.from(page.items.reversed);
       if (!mounted) return;
 
       setState(() {
@@ -149,6 +151,8 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
             sortedMessages.map((message) => message.id).whereType<String>(),
           );
         _isLoadingMessages = false;
+        _hasMoreMessages = page.hasMore;
+        _nextCursor = page.nextCursor;
       });
       _scrollToBottom();
     } on DioException catch (_) {
@@ -160,6 +164,75 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
           behavior: SnackBarBehavior.floating,
         ),
       );
+    }
+  }
+
+  void _handleScroll() {
+    if (!_scrollController.hasClients ||
+        _scrollController.position.pixels > 120) {
+      return;
+    }
+    _loadOlderMessages();
+  }
+
+  Future<void> _loadOlderMessages() async {
+    final cursor = _nextCursor;
+    if (_isLoadingMore ||
+        !_hasMoreMessages ||
+        cursor == null ||
+        cursor.isEmpty ||
+        _currentUserId.isEmpty) {
+      return;
+    }
+
+    _isLoadingMore = true;
+    if (mounted) setState(() {});
+    final previousMaxExtent = _scrollController.hasClients
+        ? _scrollController.position.maxScrollExtent
+        : 0.0;
+
+    try {
+      final page = await _getRecentMessages(_currentUserId, cursor: cursor);
+      final olderMessages = page.items.reversed
+          .where(
+            (message) =>
+                message.id == null || !_messageIds.contains(message.id),
+          )
+          .toList();
+      if (!mounted) return;
+
+      setState(() {
+        _messages.insertAll(0, olderMessages);
+        _messageIds.addAll(
+          olderMessages.map((message) => message.id).whereType<String>(),
+        );
+        _hasMoreMessages = page.hasMore;
+        _nextCursor = page.nextCursor;
+      });
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_scrollController.hasClients) return;
+        final addedExtent =
+            _scrollController.position.maxScrollExtent - previousMaxExtent;
+        _scrollController.jumpTo(
+          (_scrollController.position.pixels + addedExtent).clamp(
+            0,
+            _scrollController.position.maxScrollExtent,
+          ),
+        );
+      });
+    } on DioException {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không tải được tin nhắn cũ hơn.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      _isLoadingMore = false;
+      if (mounted) setState(() {});
     }
   }
 
@@ -280,31 +353,50 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
     setState(() => _selectedAttachments.remove(attachment));
   }
 
-  void _handleIncomingMessage(ChatMessageModel message) {
+  void _handleIncomingMessage(ChatSocketEvent event) {
+    final message = event.message;
     final hasMessageBody =
-        message.text.isNotEmpty || message.attachments.isNotEmpty;
-    if (!hasMessageBody || _isDuplicateMessage(message)) return;
+        message.text.isNotEmpty ||
+        message.attachments.isNotEmpty ||
+        message.type == ChatMessageType.call ||
+        message.type == ChatMessageType.location;
+    if (!hasMessageBody) return;
 
     final isMine = message.senderId == _currentUserId;
+    final entity = message.toEntity(isMine: isMine);
+    final messageId = message.id;
+    final existingIndex = messageId == null
+        ? -1
+        : _messages.indexWhere((item) => item.id == messageId);
+
+    if (event.isUpdate || existingIndex >= 0) {
+      if (existingIndex < 0) return;
+      setState(() => _messages[existingIndex] = entity);
+      return;
+    }
+
     if (isMine &&
         message.attachments.isEmpty &&
         _isEchoFromRecentSend(message.text)) {
+      final optimisticIndex = _messages.lastIndexWhere(
+        (item) => item.id == null && item.isMine && item.text == message.text,
+      );
+      if (optimisticIndex >= 0) {
+        setState(() {
+          _messages[optimisticIndex] = entity;
+          if (messageId != null) _messageIds.add(messageId);
+        });
+      }
       return;
     }
 
     setState(() {
-      final messageId = message.id;
       if (messageId != null) {
         _messageIds.add(messageId);
       }
-      _messages.add(message.toEntity(isMine: isMine));
+      _messages.add(entity);
     });
     _scrollToBottom();
-  }
-
-  bool _isDuplicateMessage(ChatMessageModel message) {
-    final messageId = message.id;
-    return messageId != null && _messageIds.contains(messageId);
   }
 
   bool _isEchoFromRecentSend(String text) {
@@ -392,11 +484,23 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
                   : ListView.separated(
                       controller: _scrollController,
                       padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
-                      itemCount: timelineItems.length,
+                      itemCount:
+                          timelineItems.length + (_isLoadingMore ? 1 : 0),
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: 12),
                       itemBuilder: (context, index) {
-                        final item = timelineItems[index];
+                        if (_isLoadingMore && index == 0) {
+                          return const Center(
+                            child: SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          );
+                        }
+
+                        final timelineIndex = index - (_isLoadingMore ? 1 : 0);
+                        final item = timelineItems[timelineIndex];
 
                         if (item is _DateDividerTimelineItem) {
                           return _DateDivider(date: item.date);

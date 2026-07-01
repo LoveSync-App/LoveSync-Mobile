@@ -4,9 +4,7 @@ abstract class MemoryRepository {
   Future<List<MemoryResponse>> getAllMemories();
   Future<void> createMemory({
     required String fileUrl,
-    required String title,
     required String description,
-    required String emotion,
     required DateTime time,
   });
 }

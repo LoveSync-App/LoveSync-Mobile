@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -81,15 +80,11 @@ class _CreateMemoryPageState extends State<CreateMemoryPage> {
       }
 
       final imageUrl = await _uploadFile.call(_selectedImage!);
-      print("URL ảnh đã upload: $imageUrl"); // Debug URL ảnh sau khi upload
 
       await _postCreateMemory.call(
-        // _selectedImage!.path,
-        imageUrl,
-        _titleController.text,
-        _descController.text,
-        _selectedEmotion,
-        _selectedDate,
+        fileUrl: imageUrl,
+        description: _descController.text,
+        time: _selectedDate,
       );
     } on DioException catch (e) {
       if (mounted) {

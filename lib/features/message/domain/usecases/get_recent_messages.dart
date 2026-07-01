@@ -6,7 +6,15 @@ class GetRecentMessages {
 
   final ChatRepository repository;
 
-  Future<List<ChatMessage>> call(String currentUserId) async {
-    return await repository.getRecentMessages(currentUserId);
+  Future<ChatTimelinePage> call(
+    String currentUserId, {
+    String? cursor,
+    int limit = 20,
+  }) async {
+    return await repository.getTimelinePage(
+      currentUserId,
+      cursor: cursor,
+      limit: limit,
+    );
   }
 }
