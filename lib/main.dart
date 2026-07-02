@@ -34,12 +34,17 @@ void main() async {
         Provider<DioClient>(
           create: (context) => DioClient(
             SharedPreferencesAuthStorage(),
-            onUnauthorized: context.read<AuthProvider>().logout,
+            onUnauthorized: context.read<AuthProvider>().handleUnauthorized,
           ),
         ),
         ChangeNotifierProxyProvider<AuthProvider, CallProvider>(
           create: (context) =>
-              CallProvider(CallRemoteDatasource(context.read<DioClient>().dio)),
+              CallProvider(
+                CallRemoteDatasource(context.read<DioClient>().dio),
+                onSessionRevoked: context
+                    .read<AuthProvider>()
+                    .invalidateSession,
+              ),
           update: (_, authProvider, callProvider) {
             callProvider?.updateAuth(
               token: authProvider.accessToken,

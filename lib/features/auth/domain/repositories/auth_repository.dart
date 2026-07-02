@@ -3,6 +3,11 @@ import 'package:lovesync_mobile/features/auth/domain/entities/register_response.
 
 abstract class AuthRepository {
   Future<LoginResponse> login(String email, String password);
+  Future<LoginResponse> loginWithGoogle({
+    required String firebaseIdToken,
+    required String name,
+    required String avatar,
+  });
   Future<RegisterResponse> register(
     String email,
     String password,

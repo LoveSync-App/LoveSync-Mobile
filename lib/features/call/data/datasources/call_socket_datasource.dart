@@ -25,6 +25,7 @@ class CallSocketDatasource {
     'call:media-updated',
     'calls:ready',
     'calls:error',
+    'auth:session-revoked',
   ];
 
   final String token;

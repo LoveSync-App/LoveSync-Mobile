@@ -202,7 +202,19 @@ class _CalendarEventFormPageState extends State<CalendarEventFormPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8FA),
       appBar: AppBar(
-        title: Text(_isEditing ? 'Chỉnh sửa sự kiện' : 'Thêm sự kiện'),
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          onPressed: _isSaving || _isDeleting
+              ? null
+              : () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.close_rounded),
+          tooltip: 'Đóng',
+        ),
+        title: Text(
+          _isEditing
+              ? (isImportant ? 'Ngày quan trọng' : 'Lịch hẹn')
+              : 'Thêm sự kiện',
+        ),
         backgroundColor: Colors.white,
         actions: [
           if (_isEditing)

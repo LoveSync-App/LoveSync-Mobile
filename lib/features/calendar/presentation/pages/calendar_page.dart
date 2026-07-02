@@ -109,14 +109,7 @@ class _CalendarPageState extends State<CalendarPage> {
             _selectedDate.day,
             18,
           );
-    final created = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => CalendarEventFormPage(
-          datasource: _datasource,
-          initialDate: initialDate,
-        ),
-      ),
-    );
+    final created = await _showEventForm(initialDate: initialDate);
     if (created == true && mounted) {
       await _loadMonth(showLoading: false);
     }
@@ -150,15 +143,33 @@ class _CalendarPageState extends State<CalendarPage> {
     }
     if (!mounted) return;
 
-    final changed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) =>
-            CalendarEventFormPage(datasource: _datasource, event: event),
-      ),
-    );
+    final changed = await _showEventForm(event: event);
     if (changed == true && mounted) {
       await _loadMonth(showLoading: false);
     }
+  }
+
+  Future<bool?> _showEventForm({CalendarEvent? event, DateTime? initialDate}) {
+    return showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      backgroundColor: const Color(0xFFFFF8FA),
+      barrierColor: Colors.black.withValues(alpha: 0.42),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      builder: (sheetContext) => SizedBox(
+        height: MediaQuery.sizeOf(sheetContext).height * 0.88,
+        child: CalendarEventFormPage(
+          datasource: _datasource,
+          event: event,
+          initialDate: initialDate,
+        ),
+      ),
+    );
   }
 
   List<CalendarEvent> _eventsOn(DateTime date) {

@@ -13,10 +13,10 @@ class UserResponseModal {
 
   factory UserResponseModal.fromJson(Map<String, dynamic> json) {
     return UserResponseModal(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      email: json['email'] as String,
-      avatar: json['avatar'] as String,
+      id: (json['id'] ?? json['_id'] ?? '').toString(),
+      name: (json['name'] ?? '').toString(),
+      email: (json['email'] ?? '').toString(),
+      avatar: (json['avatar'] ?? '').toString(),
     );
   }
 }

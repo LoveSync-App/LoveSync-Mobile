@@ -10,7 +10,7 @@ import 'package:lovesync_mobile/features/call/domain/entities/call_session.dart'
 enum CallPhase { idle, starting, incoming, outgoing, ongoing, ending }
 
 class CallProvider extends ChangeNotifier with WidgetsBindingObserver {
-  CallProvider(this._remoteDatasource) {
+  CallProvider(this._remoteDatasource, {this.onSessionRevoked}) {
     WidgetsBinding.instance.addObserver(this);
     _foregroundMessageSubscription = FirebaseMessaging.onMessage.listen(
       _handlePushMessage,
@@ -22,6 +22,7 @@ class CallProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   final CallRemoteDatasource _remoteDatasource;
+  final Future<void> Function(String message)? onSessionRevoked;
 
   String _token = '';
   String _userId = '';
@@ -233,6 +234,18 @@ class CallProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _handleSignal(CallSignalEvent event) {
+    if (event.name == 'auth:session-revoked') {
+      _disconnectSocket();
+      _reset();
+      unawaited(
+        onSessionRevoked?.call(
+              'Tài khoản đã được đăng nhập trên một thiết bị khác.',
+            ) ??
+            Future<void>.value(),
+      );
+      return;
+    }
+
     final terminalEvents = {
       'call:rejected',
       'call:canceled',

@@ -22,6 +22,41 @@ class AuthRemoteDatasource {
     }
   }
 
+  Future<LoginResponseModel> loginWithGoogle({
+    required String firebaseIdToken,
+    required String name,
+    required String avatar,
+  }) async {
+    try {
+      final response = await dio.post(
+        '/auth/google',
+        data: {
+          'firebaseIdToken': firebaseIdToken,
+          'name': name,
+          'avatar': avatar,
+        },
+      );
+      final root = response.data;
+      final data = root is Map ? root['data'] : null;
+      if (data is! Map) {
+        throw const FormatException('Invalid Google login response');
+      }
+      return LoginResponseModel.fromJson(
+        data.map((key, value) => MapEntry(key.toString(), value)),
+      );
+    } on DioException catch (error) {
+      final data = error.response?.data;
+      final message = data is Map
+          ? (data['message'] ?? data['error'])?.toString()
+          : null;
+      throw Exception(message ?? 'Không thể đăng nhập bằng Google');
+    }
+  }
+
+  Future<void> logout() async {
+    await dio.post('/auth/logout');
+  }
+
   Future<RegisterResponseModel> register(
     String email,
     String password,

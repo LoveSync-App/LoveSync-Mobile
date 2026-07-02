@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
+import 'package:lovesync_mobile/features/auth/data/datasources/auth_remote_datasource.dart';
+import 'package:lovesync_mobile/features/auth/data/datasources/google_auth_datasource.dart';
 import 'package:lovesync_mobile/features/user/data/datasources/user_remote_datasource.dart';
 import 'package:lovesync_mobile/features/user/data/repositories/user_repository_impl.dart';
 import 'package:lovesync_mobile/features/user/domain/entities/user_response.dart';
@@ -29,6 +31,8 @@ class _ProfilePageState extends State<ProfilePage> {
   late final PatchUpdateMe _patchUpdateMe;
   late final DeleteMe _deleteMe;
   late final UploadFile _uploadFile;
+  late final AuthRemoteDatasource _authRemoteDatasource;
+  late final GoogleAuthDatasource _googleAuthDatasource;
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -46,6 +50,8 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
 
     final dio = context.read<DioClient>().dio;
+    _authRemoteDatasource = AuthRemoteDatasource(dio);
+    _googleAuthDatasource = GoogleAuthDatasource();
     final userRepository = UserRepositoryImpl(UserRemoteDatasource(dio));
     _getUserInfo = GetUserInfo(userRepository);
     _patchUpdateMe = PatchUpdateMe(userRepository);
@@ -180,12 +186,32 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       await _deleteMe();
       if (!mounted) return;
+      try {
+        await _googleAuthDatasource.signOut();
+      } catch (_) {
+        // The account is already deleted on the backend.
+      }
+      if (!mounted) return;
       await context.read<AuthProvider>().logout();
     } on DioException catch (e) {
       if (!mounted) return;
       _showSnackBar(e.message ?? 'Không tắt được tài khoản.');
       setState(() => _isDeleting = false);
     }
+  }
+
+  Future<void> _logout() async {
+    try {
+      await _authRemoteDatasource.logout();
+    } catch (_) {
+      // Always clear the local session even if the network is unavailable.
+    }
+    try {
+      await _googleAuthDatasource.signOut();
+    } catch (_) {
+      // Password-only accounts may not have a Firebase/Google session.
+    }
+    if (mounted) await context.read<AuthProvider>().logout();
   }
 
   void _showSnackBar(String message) {
@@ -240,7 +266,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(height: 10),
                 TextButton.icon(
-                  onPressed: () => context.read<AuthProvider>().logout(),
+                  onPressed: _logout,
                   icon: const Icon(Icons.logout),
                   label: const Text('Đăng xuất'),
                 ),

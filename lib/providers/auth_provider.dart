@@ -9,10 +9,12 @@ class AuthProvider extends ChangeNotifier {
 
   String _accessToken = '';
   String _userId = '';
+  String? _authNotice;
   bool _isLoadingInit = true;
 
   String get accessToken => _accessToken;
   String get userId => _userId;
+  String? get authNotice => _authNotice;
   bool get isLoadingInit => _isLoadingInit;
 
   Future<void> load() async {
@@ -31,6 +33,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> login(String accessToken, String userId) async {
+    _authNotice = null;
     _accessToken = accessToken;
     _userId = userId;
     await _authStorage.saveAccessToken(accessToken);
@@ -39,6 +42,29 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    _authNotice = null;
+    await _clearSession();
+  }
+
+  Future<void> handleUnauthorized() {
+    return invalidateSession(
+      'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+    );
+  }
+
+  Future<void> invalidateSession(String message) async {
+    if (_accessToken.isEmpty && !_isLoadingInit) return;
+    _authNotice = message;
+    await _clearSession();
+  }
+
+  String? consumeAuthNotice() {
+    final notice = _authNotice;
+    _authNotice = null;
+    return notice;
+  }
+
+  Future<void> _clearSession() async {
     _accessToken = '';
     _userId = '';
     await _authStorage.deleteAccessToken();

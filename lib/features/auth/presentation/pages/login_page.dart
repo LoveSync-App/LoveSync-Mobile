@@ -1,16 +1,21 @@
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/features/auth/data/datasources/auth_remote_datasource.dart';
+import 'package:lovesync_mobile/features/auth/data/datasources/google_auth_datasource.dart';
 import 'package:lovesync_mobile/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:lovesync_mobile/features/auth/domain/entities/login_response.dart';
+import 'package:lovesync_mobile/features/auth/domain/usecases/post_google_login.dart';
 import 'package:lovesync_mobile/features/auth/domain/usecases/post_login.dart';
 import 'package:lovesync_mobile/features/user/data/datasources/user_remote_datasource.dart';
 import 'package:lovesync_mobile/features/user/data/repositories/user_repository_impl.dart';
 import 'package:lovesync_mobile/features/user/domain/usecases/post_register_device.dart';
 import 'package:lovesync_mobile/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -21,7 +26,9 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   late final PostLogin _postLogin;
+  late final PostGoogleLogin _postGoogleLogin;
   late final PostRegisterDevice _postRegisterDevice;
+  late final GoogleAuthDatasource _googleAuthDatasource;
 
   bool _isShowPassword = false;
   final TextEditingController _emailController = TextEditingController();
@@ -32,12 +39,22 @@ class _LoginPageState extends State<LoginPage> {
   @override
   initState() {
     super.initState();
-    _postLogin = PostLogin(
-      AuthRepositoryImpl(AuthRemoteDatasource(context.read<DioClient>().dio)),
+    final authRepository = AuthRepositoryImpl(
+      AuthRemoteDatasource(context.read<DioClient>().dio),
     );
+    _postLogin = PostLogin(authRepository);
+    _postGoogleLogin = PostGoogleLogin(authRepository);
+    _googleAuthDatasource = GoogleAuthDatasource();
     _postRegisterDevice = PostRegisterDevice(
       UserRepositoryImpl(UserRemoteDatasource(context.read<DioClient>().dio)),
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final notice = context.read<AuthProvider>().consumeAuthNotice();
+      if (notice != null && notice.isNotEmpty) {
+        _showMessage(notice);
+      }
+    });
   }
 
   void _onClickLogin() async {
@@ -61,24 +78,7 @@ class _LoginPageState extends State<LoginPage> {
 
       final response = await _postLogin.call(email, password);
 
-      if (mounted) {
-        await context.read<AuthProvider>().login(
-          response.accessToken,
-          response.id,
-        );
-        final fcmToken = await FirebaseMessaging.instance.getToken();
-        await _postRegisterDevice.call(fcmToken ?? "");
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Đăng nhập thành công!'),
-              // content: Text("${response.accessToken}"),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-          context.go("/couple");
-        }
-      }
+      if (mounted) await _completeLogin(response);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -95,6 +95,75 @@ class _LoginPageState extends State<LoginPage> {
         });
       }
     }
+  }
+
+  Future<void> _onClickGoogleLogin() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    try {
+      final identity = await _googleAuthDatasource.signIn();
+      final response = await _postGoogleLogin(
+        firebaseIdToken: identity.firebaseIdToken,
+        name: identity.name,
+        avatar: identity.avatar,
+      );
+      if (mounted) await _completeLogin(response);
+    } on GoogleSignInException catch (error) {
+      if (error.code != GoogleSignInExceptionCode.canceled) {
+        await _resetGoogleSession();
+        if (mounted) {
+          _showMessage(error.description ?? 'Không thể đăng nhập Google.');
+        }
+      }
+    } on FirebaseAuthException catch (error) {
+      await _resetGoogleSession();
+      if (mounted) {
+        _showMessage(error.message ?? 'Firebase không thể xác thực Google.');
+      }
+    } catch (error) {
+      await _resetGoogleSession();
+      if (mounted) {
+        _showMessage(error.toString().replaceFirst('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _resetGoogleSession() async {
+    try {
+      await _googleAuthDatasource.signOut();
+    } catch (_) {
+      // Ignore cleanup failures; the application session was not created.
+    }
+  }
+
+  Future<void> _completeLogin(LoginResponse response) async {
+    await context.read<AuthProvider>().login(response.accessToken, response.id);
+    try {
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      if (fcmToken?.isNotEmpty == true) {
+        await _postRegisterDevice(fcmToken!);
+      }
+    } catch (_) {
+      // Login remains valid even when device-token registration is unavailable.
+    }
+    if (!mounted) return;
+    _showMessage('Đăng nhập thành công!');
+    context.go('/couple');
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -282,7 +351,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: _isLoading ? null : _onClickGoogleLogin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(

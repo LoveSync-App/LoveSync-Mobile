@@ -20,6 +20,26 @@ class AuthRepositoryImpl extends AuthRepository {
   }
 
   @override
+  Future<LoginResponse> loginWithGoogle({
+    required String firebaseIdToken,
+    required String name,
+    required String avatar,
+  }) async {
+    final model = await remoteDatasource.loginWithGoogle(
+      firebaseIdToken: firebaseIdToken,
+      name: name,
+      avatar: avatar,
+    );
+    return LoginResponse(
+      id: model.user.id,
+      name: model.user.name,
+      email: model.user.email,
+      avatar: model.user.avatar,
+      accessToken: model.accessToken,
+    );
+  }
+
+  @override
   Future<RegisterResponse> register(
     String email,
     String password,

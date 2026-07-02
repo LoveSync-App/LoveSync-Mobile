@@ -58,6 +58,7 @@ class DioClient {
 
   static bool _isAuthPath(String path) {
     return path == '/auth/login' ||
+        path == '/auth/google' ||
         path == '/auth/register' ||
         path == '/auth/forgot-password';
   }
