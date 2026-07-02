@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lovesync_mobile/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:lovesync_mobile/features/auth/presentation/pages/login_page.dart';
 import 'package:lovesync_mobile/features/auth/presentation/pages/register_page.dart';
+import 'package:lovesync_mobile/features/calendar/presentation/pages/calendar_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/couple_code_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/couple_confirmation_page.dart';
 import 'package:lovesync_mobile/features/couple/presentation/pages/couple_days_page.dart';
@@ -14,7 +15,6 @@ import 'package:lovesync_mobile/features/message/presentation/pages/realtime_mes
 import 'package:lovesync_mobile/features/user/presentation/pages/profile_page.dart';
 import 'package:lovesync_mobile/shared/widgets/couple_shell_scaffold.dart';
 import 'package:lovesync_mobile/providers/auth_provider.dart';
-import 'package:provider/provider.dart';
 
 class AppRouter {
   late final AuthProvider _authProvider;
@@ -108,12 +108,8 @@ class AppRouter {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                // Ngày kỹ niệm
                 path: "/anniversaries",
-                builder: (context, state) => const _ComingSoonTabPage(
-                  icon: Icons.calendar_today,
-                  title: 'Ngày Kỹ Niệm',
-                ),
+                builder: (context, state) => const CalendarPage(),
               ),
             ],
           ),
@@ -158,41 +154,4 @@ class AppRouter {
       return null;
     },
   );
-}
-
-class _ComingSoonTabPage extends StatelessWidget {
-  const _ComingSoonTabPage({required this.icon, required this.title});
-
-  final IconData icon;
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title), centerTitle: true),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 48, color: const Color(0xFFA03B56)),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: 200,
-              child: ElevatedButton(
-                onPressed: () async {
-                  await context.read<AuthProvider>().logout();
-                },
-                child: const Text("Đăng Xuất"),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
