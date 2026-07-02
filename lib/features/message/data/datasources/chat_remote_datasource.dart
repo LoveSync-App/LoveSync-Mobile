@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:lovesync_mobile/features/message/data/models/chat_message_model.dart';
+import 'package:lovesync_mobile/features/message/data/models/partner_presence_model.dart';
 
 class ChatRemoteDatasource {
   const ChatRemoteDatasource(this.dio);
@@ -34,5 +35,10 @@ class ChatRemoteDatasource {
         if (attachmentUrls.isNotEmpty) 'attachmentUrls': attachmentUrls,
       },
     );
+  }
+
+  Future<PartnerPresenceModel> getPartnerPresence() async {
+    final response = await dio.get('/presence/partner');
+    return PartnerPresenceModel.fromData(response.data);
   }
 }

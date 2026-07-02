@@ -9,6 +9,7 @@ class MessageComposer extends StatelessWidget {
     required this.onSend,
     required this.onPickFile,
     required this.onPickImage,
+    required this.onLocation,
     required this.selectedAttachments,
     required this.onRemoveAttachment,
     this.isSending = false,
@@ -18,6 +19,7 @@ class MessageComposer extends StatelessWidget {
   final VoidCallback onSend;
   final VoidCallback onPickFile;
   final VoidCallback onPickImage;
+  final VoidCallback onLocation;
   final List<File> selectedAttachments;
   final ValueChanged<File> onRemoveAttachment;
   final bool isSending;
@@ -99,6 +101,12 @@ class MessageComposer extends StatelessWidget {
                           child: const Icon(Icons.add_photo_alternate_outlined),
                         ),
                   color: const Color(0xFFA03B56),
+                ),
+                IconButton(
+                  onPressed: isSending ? null : onLocation,
+                  icon: const Icon(Icons.location_on_outlined),
+                  color: const Color(0xFFA03B56),
+                  tooltip: 'Chia sẻ vị trí',
                 ),
                 Expanded(
                   child: TextField(

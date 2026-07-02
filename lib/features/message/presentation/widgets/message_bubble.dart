@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lovesync_mobile/features/location/presentation/pages/location_snapshot_page.dart';
+import 'package:lovesync_mobile/features/location/presentation/widgets/location_map.dart';
 import 'package:lovesync_mobile/features/message/domain/entities/chat_message.dart';
 import 'package:video_player/video_player.dart';
 
@@ -230,72 +232,126 @@ class _LocationTimelineCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final payload = message.payload;
     final address = payload['address']?.toString();
-    final latitude = payload['latitude'];
-    final longitude = payload['longitude'];
+    final label = payload['label']?.toString();
+    final latitude = _readDouble(payload['latitude']);
+    final longitude = _readDouble(payload['longitude']);
 
     return Align(
       alignment: message.isMine ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 290),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: message.isMine ? const Color(0xFFA03B56) : Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.location_on,
-              size: 34,
-              color: message.isMine ? Colors.white : const Color(0xFFA03B56),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    address == null || address.isEmpty
-                        ? 'Vị trí đã chia sẻ'
-                        : address,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: message.isMine ? Colors.white : Colors.black87,
+      child: GestureDetector(
+        onTap: latitude == null || longitude == null
+            ? null
+            : () {
+                Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                    builder: (_) => LocationSnapshotPage(
+                      latitude: latitude,
+                      longitude: longitude,
+                      address: address,
+                      label: label,
                     ),
                   ),
-                  if (latitude != null && longitude != null)
-                    Text(
-                      '$latitude, $longitude',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: message.isMine
-                            ? Colors.white70
-                            : const Color(0xFF777777),
+                );
+              },
+        child: Container(
+          width: 280,
+          decoration: BoxDecoration(
+            color: message.isMine ? const Color(0xFFA03B56) : Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (latitude != null && longitude != null)
+                SizedBox(
+                  height: 130,
+                  child: LocationMap(
+                    interactive: false,
+                    zoom: 15,
+                    markers: [
+                      LocationMapMarker(
+                        latitude: latitude,
+                        longitude: longitude,
+                        color: const Color(0xFFA03B56),
+                        icon: Icons.favorite_rounded,
+                      ),
+                    ],
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.all(13),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.location_on,
+                      size: 30,
+                      color: message.isMine
+                          ? Colors.white
+                          : const Color(0xFFA03B56),
+                    ),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            address == null || address.isEmpty
+                                ? (label == null || label.isEmpty
+                                      ? 'Vị trí đã chia sẻ'
+                                      : label)
+                                : address,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: message.isMine
+                                  ? Colors.white
+                                  : Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Nhấn để xem bản đồ',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: message.isMine
+                                  ? Colors.white70
+                                  : const Color(0xFF777777),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                ],
+                    Text(
+                      DateFormat('HH:mm').format(message.sentAt),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: message.isMine
+                            ? Colors.white70
+                            : const Color(0xFF8A8F96),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Text(
-              DateFormat('HH:mm').format(message.sentAt),
-              style: TextStyle(
-                fontSize: 10,
-                color: message.isMine
-                    ? Colors.white70
-                    : const Color(0xFF8A8F96),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  double? _readDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '');
   }
 }
 

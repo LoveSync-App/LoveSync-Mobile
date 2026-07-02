@@ -28,9 +28,14 @@
 	<string>LoveSync cần quyền truy cập micro để thực hiện cuộc gọi thoại.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>LoveSync cần quyền truy cập camera để thực hiện cuộc gọi video.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>LoveSync cần vị trí để gửi vị trí hiện tại và chia sẻ trực tiếp với người ấy.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>LoveSync cần cập nhật vị trí khi bạn đang bật chia sẻ trực tiếp với người ấy.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
+		<string>location</string>
 		<string>remote-notification</string>
 	</array>
 	<key>UILaunchStoryboardName</key>

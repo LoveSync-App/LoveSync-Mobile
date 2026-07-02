@@ -11,8 +11,11 @@ import 'package:lovesync_mobile/features/call/presentation/providers/call_provid
 import 'package:lovesync_mobile/features/couple/data/datasources/couple_remote_datasource.dart';
 import 'package:lovesync_mobile/features/couple/data/repositories/couple_repository_impl.dart';
 import 'package:lovesync_mobile/features/couple/domain/usecases/get_my_couple.dart';
+import 'package:lovesync_mobile/features/location/presentation/pages/live_location_page.dart';
+import 'package:lovesync_mobile/features/location/presentation/pages/location_preview_page.dart';
 import 'package:lovesync_mobile/features/message/data/datasources/chat_remote_datasource.dart';
 import 'package:lovesync_mobile/features/message/data/datasources/chat_socket_datasource.dart';
+import 'package:lovesync_mobile/features/message/data/models/partner_presence_model.dart';
 import 'package:lovesync_mobile/features/message/data/repositories/chat_repository_impl.dart';
 import 'package:lovesync_mobile/features/message/domain/entities/chat_message.dart';
 import 'package:lovesync_mobile/features/message/domain/usecases/get_recent_messages.dart';
@@ -42,10 +45,12 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
   late final GetRecentMessages _getRecentMessages;
   late final GetMyCouple _getMyCouple;
   late final UploadFile _uploadFile;
+  late final ChatRemoteDatasource _chatRemoteDatasource;
   final ImagePicker _imagePicker = ImagePicker();
   ChatSocketDatasource? _chatSocketDatasource;
   StreamSubscription<ChatSocketEvent>? _messageSubscription;
   StreamSubscription<bool>? _connectionSubscription;
+  StreamSubscription<PartnerPresenceModel>? _presenceSubscription;
 
   final List<ChatMessage> _messages = [];
   final List<File> _selectedAttachments = [];
@@ -58,6 +63,7 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
   bool _isLoadingMessages = true;
   bool _isSending = false;
   bool _isSocketConnected = false;
+  PartnerPresenceModel? _partnerPresence;
   bool _isLoadingMore = false;
   bool _hasMoreMessages = true;
   String? _nextCursor;
@@ -66,9 +72,8 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
   void initState() {
     super.initState();
 
-    final chatRepository = ChatRepositoryImpl(
-      ChatRemoteDatasource(context.read<DioClient>().dio),
-    );
+    _chatRemoteDatasource = ChatRemoteDatasource(context.read<DioClient>().dio);
+    final chatRepository = ChatRepositoryImpl(_chatRemoteDatasource);
     _postSendMessage = PostSendMessage(chatRepository);
     _getRecentMessages = GetRecentMessages(chatRepository);
     _getMyCouple = GetMyCouple(
@@ -86,6 +91,7 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
     _scrollController.addListener(_handleScroll);
     _loadCoupleInfo();
     _loadRecentMessages();
+    _loadPartnerPresence();
     _connectSocket();
   }
 
@@ -93,6 +99,7 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
   void dispose() {
     _messageSubscription?.cancel();
     _connectionSubscription?.cancel();
+    _presenceSubscription?.cancel();
     _chatSocketDatasource?.dispose();
     _messageController.dispose();
     _scrollController.dispose();
@@ -111,8 +118,22 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
       if (!mounted) return;
       setState(() => _isSocketConnected = connected);
     });
+    _presenceSubscription = datasource.partnerPresence.listen((presence) {
+      if (!mounted) return;
+      setState(() => _partnerPresence = presence);
+    });
 
     datasource.connect();
+  }
+
+  Future<void> _loadPartnerPresence() async {
+    try {
+      final presence = await _chatRemoteDatasource.getPartnerPresence();
+      if (!mounted) return;
+      setState(() => _partnerPresence = presence);
+    } on DioException {
+      // Presence API may not be available while the backend is being upgraded.
+    }
   }
 
   Future<void> _loadCoupleInfo() async {
@@ -348,6 +369,82 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
     });
   }
 
+  Future<void> _showLocationActions() async {
+    if (_isSending) return;
+
+    final action = await showModalBottomSheet<_LocationAction>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Chia sẻ vị trí',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Chọn gửi một vị trí cố định hoặc chia sẻ trực tiếp.',
+                style: TextStyle(color: Color(0xFF70757A)),
+              ),
+              const SizedBox(height: 14),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFFFE7ED),
+                  child: Icon(
+                    Icons.location_on_rounded,
+                    color: Color(0xFFA03B56),
+                  ),
+                ),
+                title: const Text('Gửi vị trí hiện tại'),
+                subtitle: const Text('Gửi một vị trí cố định vào tin nhắn'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () =>
+                    Navigator.of(context).pop(_LocationAction.snapshot),
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFE8F0FF),
+                  child: Icon(Icons.near_me_rounded, color: Color(0xFF4C79C6)),
+                ),
+                title: const Text('Chia sẻ vị trí trực tiếp'),
+                subtitle: const Text(
+                  'Người ấy theo dõi vị trí mới nhất trên map',
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(context).pop(_LocationAction.live),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (!mounted || action == null) return;
+    if (action == _LocationAction.snapshot) {
+      final sent = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => const LocationPreviewPage()),
+      );
+      if (sent == true && mounted) {
+        await _loadRecentMessages();
+      }
+      return;
+    }
+    await _openLiveLocation();
+  }
+
+  Future<void> _openLiveLocation() {
+    return Navigator.of(
+      context,
+    ).push<void>(MaterialPageRoute(builder: (_) => const LiveLocationPage()));
+  }
+
   void _removeAttachment(File attachment) {
     if (_isSending) return;
     setState(() => _selectedAttachments.remove(attachment));
@@ -471,10 +568,12 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
           children: [
             PartnerChatHeader(
               isConnected: _isSocketConnected,
+              isPartnerOnline: _partnerPresence?.isOnline,
               partnerName: _partnerName,
               partnerAvatar: _partnerAvatar,
               onAudioCall: _startAudioCall,
               onVideoCall: _startVideoCall,
+              onLocation: _openLiveLocation,
             ),
             Expanded(
               child: _isLoadingMessages
@@ -522,6 +621,7 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
               onSend: _sendMessage,
               onPickFile: _pickFileAttachment,
               onPickImage: _pickImageAttachment,
+              onLocation: _showLocationActions,
               selectedAttachments: _selectedAttachments,
               onRemoveAttachment: _removeAttachment,
               isSending: _isSending,
@@ -532,6 +632,8 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
     );
   }
 }
+
+enum _LocationAction { snapshot, live }
 
 sealed class _ChatTimelineItem {
   const _ChatTimelineItem();

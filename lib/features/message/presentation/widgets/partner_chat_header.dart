@@ -5,17 +5,21 @@ class PartnerChatHeader extends StatelessWidget {
   const PartnerChatHeader({
     super.key,
     required this.isConnected,
+    this.isPartnerOnline,
     required this.partnerName,
     required this.partnerAvatar,
     required this.onAudioCall,
     required this.onVideoCall,
+    required this.onLocation,
   });
 
   final bool isConnected;
+  final bool? isPartnerOnline;
   final String partnerName;
   final String partnerAvatar;
   final VoidCallback onAudioCall;
   final VoidCallback onVideoCall;
+  final VoidCallback onLocation;
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +64,7 @@ class PartnerChatHeader extends StatelessWidget {
                   width: 12,
                   height: 12,
                   decoration: BoxDecoration(
-                    color: isConnected
+                    color: isPartnerOnline == true
                         ? const Color(0xFF42C66D)
                         : const Color(0xFFB6BBC2),
                     shape: BoxShape.circle,
@@ -87,7 +91,11 @@ class PartnerChatHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  isConnected ? 'Dang hoat dong' : 'Khong hoat dong',
+                  isPartnerOnline == null
+                      ? (isConnected ? 'Đã kết nối' : 'Mất kết nối')
+                      : isPartnerOnline!
+                      ? 'Đang hoạt động'
+                      : 'Không hoạt động',
                   style: const TextStyle(
                     fontSize: 12,
                     color: Color(0xFF6D7278),
@@ -105,6 +113,12 @@ class PartnerChatHeader extends StatelessWidget {
             onPressed: onVideoCall,
             icon: const Icon(Icons.videocam_outlined),
             color: const Color(0xFFA03B56),
+          ),
+          IconButton(
+            onPressed: onLocation,
+            icon: const Icon(Icons.map_outlined),
+            color: const Color(0xFFA03B56),
+            tooltip: 'Vị trí trực tiếp',
           ),
         ],
       ),

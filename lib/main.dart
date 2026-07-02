@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +9,8 @@ import 'package:lovesync_mobile/core/storage/impl/shared_preferences_auth_storag
 import 'package:lovesync_mobile/features/call/data/datasources/call_remote_datasource.dart';
 import 'package:lovesync_mobile/features/call/presentation/providers/call_provider.dart';
 import 'package:lovesync_mobile/features/call/presentation/widgets/call_overlay.dart';
+import 'package:lovesync_mobile/features/location/data/datasources/location_remote_datasource.dart';
+import 'package:lovesync_mobile/features/location/presentation/providers/location_sharing_provider.dart';
 import 'package:lovesync_mobile/providers/auth_provider.dart';
 import 'app_router.dart';
 import 'package:provider/provider.dart';
@@ -41,6 +45,20 @@ void main() async {
               userId: authProvider.userId,
             );
             return callProvider!;
+          },
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, LocationSharingProvider>(
+          create: (context) => LocationSharingProvider(
+            LocationRemoteDatasource(context.read<DioClient>().dio),
+          ),
+          update: (_, authProvider, locationProvider) {
+            unawaited(
+              locationProvider?.updateAuth(
+                token: authProvider.accessToken,
+                userId: authProvider.userId,
+              ),
+            );
+            return locationProvider!;
           },
         ),
       ],
