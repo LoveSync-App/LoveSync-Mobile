@@ -240,6 +240,7 @@ class _CalendarPageState extends State<CalendarPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'calendar-create-event-fab',
         onPressed: _openCreateEvent,
         backgroundColor: const Color(0xFFA03B56),
         foregroundColor: Colors.white,

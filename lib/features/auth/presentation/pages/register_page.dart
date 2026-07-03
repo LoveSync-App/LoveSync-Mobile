@@ -94,12 +94,18 @@ class _RegisterPageState extends State<RegisterPage> {
         accessToken: loginResponse.accessToken,
         refreshToken: loginResponse.refreshToken,
         userId: loginResponse.id,
+        notify: false,
       );
       final e2eeReady = await _setupE2eeForNewAccount(loginResponse);
       if (!e2eeReady) {
         await authProvider.logout();
         return;
       }
+      await authProvider.loginWithTokens(
+        accessToken: loginResponse.accessToken,
+        refreshToken: loginResponse.refreshToken,
+        userId: loginResponse.id,
+      );
       if (mounted) {
         ScaffoldMessenger.of(
           context,

@@ -47,6 +47,7 @@ class AuthProvider extends ChangeNotifier {
     required String accessToken,
     required String refreshToken,
     required String userId,
+    bool notify = true,
   }) async {
     _authNotice = null;
     _accessToken = accessToken;
@@ -59,7 +60,7 @@ class AuthProvider extends ChangeNotifier {
       await _authStorage.deleteRefreshToken();
     }
     await _authStorage.saveUserId(userId);
-    notifyListeners();
+    if (notify) notifyListeners();
   }
 
   Future<void> updateTokenPair({

@@ -33,6 +33,7 @@ class DioClient {
 
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
+            options.extra['accessTokenUsed'] = token;
           }
 
           return handler.next(options);
@@ -46,6 +47,10 @@ class DioClient {
               !isAuthRequest &&
               !isRefreshRequest &&
               error.requestOptions.extra['retriedAfterRefresh'] != true;
+
+          if (shouldTryRefresh && await _retryWithLatestToken(error, handler)) {
+            return;
+          }
 
           if (shouldTryRefresh) {
             _TokenPair? tokenPair;
@@ -80,6 +85,35 @@ class DioClient {
     );
   }
 
+  Future<bool> _retryWithLatestToken(
+    DioException error,
+    ErrorInterceptorHandler handler,
+  ) async {
+    final tokenUsed = error.requestOptions.extra['accessTokenUsed']?.toString();
+    final latestToken = await authStorage.readAccessToken();
+    if (latestToken == null ||
+        latestToken.isEmpty ||
+        latestToken == tokenUsed) {
+      return false;
+    }
+
+    final requestOptions = error.requestOptions;
+    requestOptions.extra['retriedAfterRefresh'] = true;
+    requestOptions.extra['accessTokenUsed'] = latestToken;
+    requestOptions.headers['Authorization'] = 'Bearer $latestToken';
+    try {
+      final response = await dio.fetch<dynamic>(requestOptions);
+      handler.resolve(response);
+      return true;
+    } on DioException catch (retryError) {
+      if (retryError.response?.statusCode != 401) {
+        handler.next(retryError);
+        return true;
+      }
+      return false;
+    }
+  }
+
   Future<_TokenPair?> _refreshToken() async {
     final activeRefresh = _refreshTokenFuture;
     if (activeRefresh != null) return activeRefresh;
@@ -110,9 +144,7 @@ class DioClient {
 
       final nextAccessToken = data['accessToken']?.toString() ?? '';
       final nextRefreshToken = data['refreshToken']?.toString() ?? '';
-      if (nextAccessToken.isEmpty || nextRefreshToken.isEmpty) {
-        return null;
-      }
+      if (nextAccessToken.isEmpty || nextRefreshToken.isEmpty) return null;
 
       await authStorage.saveAccessToken(nextAccessToken);
       await authStorage.saveRefreshToken(nextRefreshToken);

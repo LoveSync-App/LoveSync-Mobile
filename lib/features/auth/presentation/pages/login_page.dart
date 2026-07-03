@@ -152,6 +152,7 @@ class _LoginPageState extends State<LoginPage> {
       accessToken: response.accessToken,
       refreshToken: response.refreshToken,
       userId: response.id,
+      notify: false,
     );
     final e2eeReady = await _ensureE2eeReady(response);
     if (!e2eeReady) {
@@ -162,6 +163,11 @@ class _LoginPageState extends State<LoginPage> {
       }
       return;
     }
+    await authProvider.loginWithTokens(
+      accessToken: response.accessToken,
+      refreshToken: response.refreshToken,
+      userId: response.id,
+    );
     try {
       final fcmToken = await FirebaseMessaging.instance.getToken();
       if (fcmToken?.isNotEmpty == true) {

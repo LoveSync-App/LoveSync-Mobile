@@ -263,6 +263,7 @@ class _MemoryListPageState extends State<MemoryListPage> {
                   bottom: 16,
                   right: 16,
                   child: FloatingActionButton(
+                    heroTag: 'memory-create-fab',
                     onPressed: _openShareMemory,
                     child: const Icon(Icons.add),
                   ),
