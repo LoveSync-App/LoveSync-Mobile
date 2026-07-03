@@ -12,7 +12,20 @@
           "package_name": "com.example.lovesync_mobile"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "375400582595-kqkqcdkpkjo71j15973eg05avnptkib2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.lovesync_mobile",
+            "certificate_hash": "bb029ac6d7b455518e8ef24b3c3e3aeaf7833061"
+          }
+        },
+        {
+          "client_id": "375400582595-qq5bfsi9mceaicleb4ksann04lfosh5p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyD4GENp4vEKHfds1P9LUddTOMw4q_2fH3E"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "375400582595-qq5bfsi9mceaicleb4ksann04lfosh5p.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "375400582595-l5o6pjh8hv454q66fcc78kothp32qft8.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.lovesyncMobile"
+              }
+            }
+          ]
         }
       }
     }

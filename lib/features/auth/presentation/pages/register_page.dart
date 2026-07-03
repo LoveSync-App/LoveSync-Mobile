@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:lovesync_mobile/features/auth/data/repositories/auth_repository_impl.dart';
-import 'package:lovesync_mobile/features/auth/domain/repositories/auth_repository.dart';
 import 'package:lovesync_mobile/features/auth/domain/usecases/post_register.dart';
 import 'package:provider/provider.dart';
 
@@ -157,7 +156,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.2),
+                            color: Colors.grey.withValues(alpha: 0.2),
                             spreadRadius: 2,
                             blurRadius: 5,
                             offset: const Offset(0, 3),
@@ -446,7 +445,7 @@ class _RegisterPageState extends State<RegisterPage> {
               Container(
                 width: double.infinity,
                 height: double.infinity,
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
                 child: const Center(child: CircularProgressIndicator()),
               ),
           ],
