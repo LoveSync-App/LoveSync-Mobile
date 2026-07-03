@@ -208,20 +208,16 @@ class _CalendarEventFormPageState extends State<CalendarEventFormPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8FA),
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-        leading: IconButton(
-          onPressed: _isSaving || _isDeleting
-              ? null
-              : () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.close_rounded),
-          tooltip: 'Đóng',
-        ),
+        centerTitle: false,
         title: Text(
           _isEditing
-              ? (isImportant ? 'Ngày quan trọng' : 'Lịch hẹn')
-              : 'Thêm sự kiện',
+              ? (isImportant ? 'Chi tiết ngày đặc biệt' : 'Chi tiết lịch hẹn')
+              : 'Tạo lịch hẹn / ngày đặc biệt',
         ),
         backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0.6,
         actions: [
           if (_isEditing)
             IconButton(
@@ -238,193 +234,202 @@ class _CalendarEventFormPageState extends State<CalendarEventFormPage> {
             ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(18, 20, 18, 36),
-          children: [
-            SegmentedButton<CalendarEventType>(
-              segments: const [
-                ButtonSegment(
-                  value: CalendarEventType.appointment,
-                  icon: Icon(Icons.event_available_rounded),
-                  label: Text('Lịch hẹn'),
-                ),
-                ButtonSegment(
-                  value: CalendarEventType.importantDate,
-                  icon: Icon(Icons.favorite_rounded),
-                  label: Text('Ngày quan trọng'),
-                ),
-              ],
-              selected: {_type},
-              onSelectionChanged: (selection) {
-                setState(() {
-                  _type = selection.first;
-                  if (_type == CalendarEventType.appointment) {
-                    _recurrence = CalendarRecurrence.none;
-                  }
-                });
-              },
-            ),
-            const SizedBox(height: 20),
-            TextFormField(
-              controller: _titleController,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: _inputDecoration(
-                'Tiêu đề',
-                Icons.title_rounded,
-                hint: isImportant ? 'Ngày kỷ niệm' : 'Ăn tối cùng nhau',
-              ),
-              validator: (value) => value == null || value.trim().isEmpty
-                  ? 'Vui lòng nhập tiêu đề'
-                  : null,
-            ),
-            const SizedBox(height: 14),
-            TextFormField(
-              controller: _descriptionController,
-              minLines: 2,
-              maxLines: 4,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: _inputDecoration(
-                'Mô tả',
-                Icons.notes_rounded,
-                hint: 'Thêm một vài chi tiết...',
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: _PickerTile(
-                    icon: Icons.calendar_month_rounded,
-                    label: 'Ngày',
-                    value: DateFormat('dd/MM/yyyy').format(_selectedDate),
-                    onTap: _pickDate,
-                  ),
-                ),
-                if (!isImportant) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _PickerTile(
-                      icon: Icons.schedule_rounded,
-                      label: 'Thời gian',
-                      value: _selectedTime.format(context),
-                      onTap: _pickTime,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            if (!isImportant) ...[
-              const SizedBox(height: 14),
-              TextFormField(
-                controller: _locationController,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: _inputDecoration(
-                  'Địa điểm (không bắt buộc)',
-                  Icons.location_on_outlined,
-                ),
-              ),
-            ],
-            if (isImportant) ...[
-              const SizedBox(height: 20),
-              const Text(
-                'Lặp lại',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-              SegmentedButton<CalendarRecurrence>(
+      body: SafeArea(
+        top: false,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(18, 20, 18, 36),
+            children: [
+              SegmentedButton<CalendarEventType>(
                 segments: const [
                   ButtonSegment(
-                    value: CalendarRecurrence.none,
-                    label: Text('Không lặp'),
+                    value: CalendarEventType.appointment,
+                    icon: Icon(Icons.event_available_rounded),
+                    label: Text('Lịch hẹn'),
                   ),
                   ButtonSegment(
-                    value: CalendarRecurrence.yearly,
-                    label: Text('Hằng năm'),
+                    value: CalendarEventType.importantDate,
+                    icon: Icon(Icons.favorite_rounded),
+                    label: Text('Ngày quan trọng'),
                   ),
                 ],
-                selected: {_recurrence},
-                onSelectionChanged: (selection) =>
-                    setState(() => _recurrence = selection.first),
+                selected: {_type},
+                onSelectionChanged: (selection) {
+                  setState(() {
+                    _type = selection.first;
+                    if (_type == CalendarEventType.appointment) {
+                      _recurrence = CalendarRecurrence.none;
+                    }
+                  });
+                },
               ),
-            ],
-            const SizedBox(height: 18),
-            SwitchListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 2),
-              title: const Text(
-                'Nhắc lịch',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
-              subtitle: const Text('Gửi thông báo cho cả hai'),
-              value: _reminderEnabled,
-              activeThumbColor: const Color(0xFFA03B56),
-              onChanged: (value) => setState(() => _reminderEnabled = value),
-            ),
-            if (_reminderEnabled) ...[
-              const SizedBox(height: 8),
-              DropdownButtonFormField<int>(
-                initialValue: _selectedReminder,
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _titleController,
+                textCapitalization: TextCapitalization.sentences,
                 decoration: _inputDecoration(
-                  'Thời gian nhắc',
-                  Icons.notifications_active_outlined,
+                  'Tiêu đề',
+                  Icons.title_rounded,
+                  hint: isImportant ? 'Ngày kỷ niệm' : 'Ăn tối cùng nhau',
                 ),
-                items: const [
-                  DropdownMenuItem(value: 0, child: Text('Đúng giờ')),
-                  DropdownMenuItem(value: 30, child: Text('Trước 30 phút')),
-                  DropdownMenuItem(value: 60, child: Text('Trước 1 giờ')),
-                  DropdownMenuItem(value: 1440, child: Text('Trước 1 ngày')),
-                  DropdownMenuItem(value: 10080, child: Text('Trước 1 tuần')),
-                  DropdownMenuItem(value: -1, child: Text('Tùy chỉnh')),
-                ],
-                onChanged: (value) =>
-                    setState(() => _selectedReminder = value ?? 1440),
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? 'Vui lòng nhập tiêu đề'
+                    : null,
               ),
-              if (_selectedReminder == -1) ...[
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _customReminderController,
-                  keyboardType: TextInputType.number,
-                  decoration: _inputDecoration(
-                    'Số phút trước sự kiện',
-                    Icons.timer_outlined,
-                    hint: '0 - 525600',
+              const SizedBox(height: 14),
+              TextFormField(
+                controller: _descriptionController,
+                minLines: 2,
+                maxLines: 4,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: _inputDecoration(
+                  'Mô tả',
+                  Icons.notes_rounded,
+                  hint: 'Thêm một vài chi tiết...',
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: _PickerTile(
+                      icon: Icons.calendar_month_rounded,
+                      label: 'Ngày',
+                      value: DateFormat('dd/MM/yyyy').format(_selectedDate),
+                      onTap: _pickDate,
+                    ),
                   ),
-                  validator: (value) {
-                    if (!_reminderEnabled || _selectedReminder != -1) {
-                      return null;
-                    }
-                    final minutes = int.tryParse(value?.trim() ?? '');
-                    if (minutes == null || minutes < 0 || minutes > 525600) {
-                      return 'Nhập số phút từ 0 đến 525600';
-                    }
-                    return null;
-                  },
+                  if (!isImportant) ...[
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _PickerTile(
+                        icon: Icons.schedule_rounded,
+                        label: 'Thời gian',
+                        value: _selectedTime.format(context),
+                        onTap: _pickTime,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              if (!isImportant) ...[
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _locationController,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: _inputDecoration(
+                    'Địa điểm (không bắt buộc)',
+                    Icons.location_on_outlined,
+                  ),
                 ),
               ],
-            ],
-            const SizedBox(height: 26),
-            SizedBox(
-              height: 52,
-              child: FilledButton.icon(
-                onPressed: _isSaving || _isDeleting ? null : _save,
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFFA03B56),
+              if (isImportant) ...[
+                const SizedBox(height: 20),
+                const Text(
+                  'Lặp lại',
+                  style: TextStyle(fontWeight: FontWeight.w700),
                 ),
-                icon: _isSaving
-                    ? const SizedBox(
-                        width: 19,
-                        height: 19,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.check_rounded),
-                label: Text(_isSaving ? 'Đang lưu...' : 'Lưu sự kiện'),
+                const SizedBox(height: 8),
+                SegmentedButton<CalendarRecurrence>(
+                  segments: const [
+                    ButtonSegment(
+                      value: CalendarRecurrence.none,
+                      label: Text('Không lặp'),
+                    ),
+                    ButtonSegment(
+                      value: CalendarRecurrence.yearly,
+                      label: Text('Hằng năm'),
+                    ),
+                  ],
+                  selected: {_recurrence},
+                  onSelectionChanged: (selection) =>
+                      setState(() => _recurrence = selection.first),
+                ),
+              ],
+              const SizedBox(height: 18),
+              SwitchListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 2),
+                title: const Text(
+                  'Nhắc lịch',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                subtitle: const Text('Gửi thông báo cho cả hai'),
+                value: _reminderEnabled,
+                activeThumbColor: const Color(0xFFA03B56),
+                onChanged: (value) => setState(() => _reminderEnabled = value),
               ),
-            ),
-          ],
+              if (_reminderEnabled) ...[
+                const SizedBox(height: 8),
+                DropdownButtonFormField<int>(
+                  initialValue: _selectedReminder,
+                  decoration: _inputDecoration(
+                    'Thời gian nhắc',
+                    Icons.notifications_active_outlined,
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 0, child: Text('Đúng giờ')),
+                    DropdownMenuItem(value: 30, child: Text('Trước 30 phút')),
+                    DropdownMenuItem(value: 60, child: Text('Trước 1 giờ')),
+                    DropdownMenuItem(value: 1440, child: Text('Trước 1 ngày')),
+                    DropdownMenuItem(value: 10080, child: Text('Trước 1 tuần')),
+                    DropdownMenuItem(value: -1, child: Text('Tùy chỉnh')),
+                  ],
+                  onChanged: (value) =>
+                      setState(() => _selectedReminder = value ?? 1440),
+                ),
+                if (_selectedReminder == -1) ...[
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _customReminderController,
+                    keyboardType: TextInputType.number,
+                    decoration: _inputDecoration(
+                      'Số phút trước sự kiện',
+                      Icons.timer_outlined,
+                      hint: '0 - 525600',
+                    ),
+                    validator: (value) {
+                      if (!_reminderEnabled || _selectedReminder != -1) {
+                        return null;
+                      }
+                      final minutes = int.tryParse(value?.trim() ?? '');
+                      if (minutes == null || minutes < 0 || minutes > 525600) {
+                        return 'Nhập số phút từ 0 đến 525600';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ],
+              const SizedBox(height: 26),
+              SizedBox(
+                height: 52,
+                child: FilledButton.icon(
+                  onPressed: _isSaving || _isDeleting ? null : _save,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFA03B56),
+                  ),
+                  icon: _isSaving
+                      ? const SizedBox(
+                          width: 19,
+                          height: 19,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.check_rounded),
+                  label: Text(
+                    _isSaving
+                        ? 'Đang lưu...'
+                        : _isEditing
+                        ? 'Cập nhật sự kiện'
+                        : 'Tạo sự kiện',
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

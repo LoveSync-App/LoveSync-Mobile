@@ -1,3 +1,5 @@
+import 'package:lovesync_mobile/features/calendar/domain/entities/calendar_event.dart';
+
 class AppRoutePaths {
   const AppRoutePaths._();
 
@@ -17,6 +19,8 @@ class AppRoutePaths {
   static const memoryCreate = '/memories/create';
 
   static const calendar = '/calendar';
+  static const calendarEventCreate = '/calendar/events/new';
+  static const calendarEventDetail = '/calendar/events/:eventId';
   static const profile = '/profile';
 
   static const chat = '/chat';
@@ -25,6 +29,10 @@ class AppRoutePaths {
   static const locationSnapshotPreview = '/locations/snapshot-preview';
   static const locationLiveMap = '/locations/live';
   static const locationSnapshotViewer = '/locations/snapshot';
+
+  static String calendarEventDetailPath(String eventId) {
+    return '/calendar/events/$eventId';
+  }
 }
 
 class LegacyAppRoutePaths {
@@ -56,4 +64,11 @@ class LocationSnapshotRouteExtra {
   final double longitude;
   final String? address;
   final String? label;
+}
+
+class CalendarEventRouteExtra {
+  const CalendarEventRouteExtra({this.event, this.initialDate});
+
+  final CalendarEvent? event;
+  final DateTime? initialDate;
 }

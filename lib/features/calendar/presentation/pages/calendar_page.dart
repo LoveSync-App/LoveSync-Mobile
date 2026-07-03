@@ -1,15 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:lovesync_mobile/app_routes.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/features/calendar/data/repositories/calendar_repository_impl.dart';
 import 'package:lovesync_mobile/features/calendar/domain/entities/calendar_event.dart';
-import 'package:lovesync_mobile/features/calendar/domain/usecases/create_calendar_event.dart';
-import 'package:lovesync_mobile/features/calendar/domain/usecases/delete_calendar_event.dart';
 import 'package:lovesync_mobile/features/calendar/domain/usecases/get_calendar_event.dart';
 import 'package:lovesync_mobile/features/calendar/domain/usecases/get_calendar_events.dart';
-import 'package:lovesync_mobile/features/calendar/domain/usecases/update_calendar_event.dart';
-import 'package:lovesync_mobile/features/calendar/presentation/pages/calendar_event_form_page.dart';
 import 'package:provider/provider.dart';
 
 class CalendarPage extends StatefulWidget {
@@ -22,9 +20,6 @@ class CalendarPage extends StatefulWidget {
 class _CalendarPageState extends State<CalendarPage> {
   late final GetCalendarEvents _getCalendarEvents;
   late final GetCalendarEvent _getCalendarEvent;
-  late final CreateCalendarEvent _createCalendarEvent;
-  late final UpdateCalendarEvent _updateCalendarEvent;
-  late final DeleteCalendarEvent _deleteCalendarEvent;
   final List<CalendarEvent> _events = [];
 
   late DateTime _visibleMonth;
@@ -46,9 +41,6 @@ class _CalendarPageState extends State<CalendarPage> {
     );
     _getCalendarEvents = GetCalendarEvents(repository);
     _getCalendarEvent = GetCalendarEvent(repository);
-    _createCalendarEvent = CreateCalendarEvent(repository);
-    _updateCalendarEvent = UpdateCalendarEvent(repository);
-    _deleteCalendarEvent = DeleteCalendarEvent(repository);
     _loadMonth();
   }
 
@@ -125,7 +117,10 @@ class _CalendarPageState extends State<CalendarPage> {
             _selectedDate.day,
             18,
           );
-    final created = await _showEventForm(initialDate: initialDate);
+    final created = await context.push<bool>(
+      AppRoutePaths.calendarEventCreate,
+      extra: CalendarEventRouteExtra(initialDate: initialDate),
+    );
     if (created == true && mounted) {
       await _loadMonth(showLoading: false);
     }
@@ -159,35 +154,13 @@ class _CalendarPageState extends State<CalendarPage> {
     }
     if (!mounted) return;
 
-    final changed = await _showEventForm(event: event);
+    final changed = await context.push<bool>(
+      AppRoutePaths.calendarEventDetailPath(event.id),
+      extra: CalendarEventRouteExtra(event: event),
+    );
     if (changed == true && mounted) {
       await _loadMonth(showLoading: false);
     }
-  }
-
-  Future<bool?> _showEventForm({CalendarEvent? event, DateTime? initialDate}) {
-    return showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
-      backgroundColor: const Color(0xFFFFF8FA),
-      barrierColor: Colors.black.withValues(alpha: 0.42),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      builder: (sheetContext) => SizedBox(
-        height: MediaQuery.sizeOf(sheetContext).height * 0.88,
-        child: CalendarEventFormPage(
-          createCalendarEvent: _createCalendarEvent,
-          updateCalendarEvent: _updateCalendarEvent,
-          deleteCalendarEvent: _deleteCalendarEvent,
-          event: event,
-          initialDate: initialDate,
-        ),
-      ),
-    );
   }
 
   List<CalendarEvent> _eventsOn(DateTime date) {

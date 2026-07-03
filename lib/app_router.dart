@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lovesync_mobile/app_routes.dart';
+import 'package:lovesync_mobile/core/network/dio_client.dart';
+import 'package:lovesync_mobile/features/calendar/data/repositories/calendar_repository_impl.dart';
+import 'package:lovesync_mobile/features/calendar/domain/usecases/create_calendar_event.dart';
+import 'package:lovesync_mobile/features/calendar/domain/usecases/delete_calendar_event.dart';
+import 'package:lovesync_mobile/features/calendar/domain/usecases/update_calendar_event.dart';
+import 'package:lovesync_mobile/features/calendar/presentation/pages/calendar_event_form_page.dart';
 import 'package:lovesync_mobile/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:lovesync_mobile/features/auth/presentation/pages/login_page.dart';
 import 'package:lovesync_mobile/features/auth/presentation/pages/register_page.dart';
@@ -20,6 +26,7 @@ import 'package:lovesync_mobile/features/message/presentation/pages/realtime_mes
 import 'package:lovesync_mobile/features/user/presentation/pages/profile_page.dart';
 import 'package:lovesync_mobile/providers/auth_provider.dart';
 import 'package:lovesync_mobile/shared/widgets/couple_shell_scaffold.dart';
+import 'package:provider/provider.dart';
 
 class AppRouter {
   AppRouter(this._authProvider);
@@ -35,6 +42,7 @@ class AppRouter {
       ..._authRoutes,
       ..._coupleRoutes,
       ..._memoryRoutes,
+      ..._calendarEventRoutes,
       ..._chatRoutes,
       ..._locationRoutes,
       _mainShellRoute,
@@ -92,6 +100,17 @@ class AppRouter {
     GoRoute(
       path: AppRoutePaths.memoryCreate,
       builder: (context, state) => const MemoryCapturePage(),
+    ),
+  ];
+
+  List<GoRoute> get _calendarEventRoutes => [
+    GoRoute(
+      path: AppRoutePaths.calendarEventCreate,
+      builder: (context, state) => _buildCalendarEventFormPage(context, state),
+    ),
+    GoRoute(
+      path: AppRoutePaths.calendarEventDetail,
+      builder: (context, state) => _buildCalendarEventFormPage(context, state),
     ),
   ];
 
@@ -267,6 +286,32 @@ class AppRouter {
       return const _MissingRouteExtraPage(message: 'Thiếu đường dẫn video');
     }
     return NetworkVideoViewerPage(url: url);
+  }
+
+  Widget _buildCalendarEventFormPage(
+    BuildContext context,
+    GoRouterState state,
+  ) {
+    final repository = CalendarRepositoryImpl.fromDio(
+      Provider.of<DioClient>(context, listen: false).dio,
+    );
+    final extra = state.extra;
+    final routeExtra = extra is CalendarEventRouteExtra ? extra : null;
+    final isDetailRoute = state.pathParameters.containsKey('eventId');
+
+    if (isDetailRoute && routeExtra?.event == null) {
+      return const _MissingRouteExtraPage(
+        message: 'Thiáº¿u dá»¯ liá»‡u lá»‹ch',
+      );
+    }
+
+    return CalendarEventFormPage(
+      createCalendarEvent: CreateCalendarEvent(repository),
+      updateCalendarEvent: UpdateCalendarEvent(repository),
+      deleteCalendarEvent: DeleteCalendarEvent(repository),
+      event: routeExtra?.event,
+      initialDate: routeExtra?.initialDate,
+    );
   }
 }
 
