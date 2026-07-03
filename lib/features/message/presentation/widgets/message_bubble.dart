@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:lovesync_mobile/features/location/presentation/pages/location_snapshot_page.dart';
+import 'package:lovesync_mobile/app_routes.dart';
 import 'package:lovesync_mobile/features/location/presentation/widgets/location_map.dart';
 import 'package:lovesync_mobile/features/message/domain/entities/chat_message.dart';
-import 'package:video_player/video_player.dart';
 
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
@@ -242,14 +242,13 @@ class _LocationTimelineCard extends StatelessWidget {
         onTap: latitude == null || longitude == null
             ? null
             : () {
-                Navigator.of(context).push<void>(
-                  MaterialPageRoute(
-                    builder: (_) => LocationSnapshotPage(
-                      latitude: latitude,
-                      longitude: longitude,
-                      address: address,
-                      label: label,
-                    ),
+                context.push(
+                  AppRoutes.locationSnapshot,
+                  extra: LocationSnapshotRouteExtra(
+                    latitude: latitude,
+                    longitude: longitude,
+                    address: address,
+                    label: label,
                   ),
                 );
               },
@@ -462,124 +461,6 @@ class _AttachmentPreview extends StatelessWidget {
   }
 
   void _openVideoViewer(BuildContext context) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => _VideoViewerPage(url: url)));
-  }
-}
-
-class _VideoViewerPage extends StatefulWidget {
-  const _VideoViewerPage({required this.url});
-
-  final String url;
-
-  @override
-  State<_VideoViewerPage> createState() => _VideoViewerPageState();
-}
-
-class _VideoViewerPageState extends State<_VideoViewerPage> {
-  late final VideoPlayerController _controller;
-  bool _hasError = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url))
-      ..initialize()
-          .then((_) {
-            if (!mounted) return;
-            setState(() {});
-            _controller.play();
-          })
-          .catchError((_) {
-            if (!mounted) return;
-            setState(() => _hasError = true);
-          });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isReady = _controller.value.isInitialized;
-
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Center(
-              child: _hasError
-                  ? const Icon(
-                      Icons.error_outline_rounded,
-                      color: Colors.white,
-                      size: 48,
-                    )
-                  : isReady
-                  ? AspectRatio(
-                      aspectRatio: _controller.value.aspectRatio,
-                      child: VideoPlayer(_controller),
-                    )
-                  : const CircularProgressIndicator(color: Colors.white),
-            ),
-            Positioned(
-              top: 12,
-              right: 12,
-              child: IconButton.filled(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.14),
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ),
-            if (isReady && !_hasError)
-              Positioned(
-                left: 20,
-                right: 20,
-                bottom: 20,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    VideoProgressIndicator(
-                      _controller,
-                      allowScrubbing: true,
-                      colors: const VideoProgressColors(
-                        playedColor: Color(0xFFA03B56),
-                        bufferedColor: Colors.white38,
-                        backgroundColor: Colors.white24,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    IconButton.filled(
-                      onPressed: () {
-                        setState(() {
-                          _controller.value.isPlaying
-                              ? _controller.pause()
-                              : _controller.play();
-                        });
-                      },
-                      icon: Icon(
-                        _controller.value.isPlaying
-                            ? Icons.pause_rounded
-                            : Icons.play_arrow_rounded,
-                      ),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.white.withValues(alpha: 0.14),
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
+    context.push(AppRoutes.messageVideoViewer, extra: {'url': url});
   }
 }

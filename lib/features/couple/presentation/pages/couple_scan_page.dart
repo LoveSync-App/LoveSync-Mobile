@@ -1,13 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lovesync_mobile/app_routes.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/features/couple/data/datasources/couple_remote_datasource.dart';
 import 'package:lovesync_mobile/features/couple/data/repositories/couple_repository_impl.dart';
 import 'package:lovesync_mobile/features/couple/domain/usecases/get_partner_by_code.dart';
 import 'package:lovesync_mobile/features/user/data/datasources/user_remote_datasource.dart';
 import 'package:lovesync_mobile/features/user/data/repositories/user_repository_impl.dart';
-import 'package:lovesync_mobile/features/user/domain/repositories/user_repository.dart';
 import 'package:lovesync_mobile/features/user/domain/usecases/get_user_info.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
@@ -78,7 +78,7 @@ class _CoupleScanPageState extends State<CoupleScanPage>
 
       if (mounted) {
         context.push(
-          "/couple/partner-info",
+          AppRoutes.couplePartnerInfo,
           extra: {
             'partnerCode': code,
             'partnerName': partner.name,

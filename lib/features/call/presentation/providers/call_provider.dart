@@ -3,14 +3,35 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/widgets.dart';
-import 'package:lovesync_mobile/features/call/data/datasources/call_remote_datasource.dart';
 import 'package:lovesync_mobile/features/call/data/datasources/call_socket_datasource.dart';
 import 'package:lovesync_mobile/features/call/domain/entities/call_session.dart';
+import 'package:lovesync_mobile/features/call/domain/usecases/accept_call.dart';
+import 'package:lovesync_mobile/features/call/domain/usecases/cancel_call.dart';
+import 'package:lovesync_mobile/features/call/domain/usecases/end_call.dart';
+import 'package:lovesync_mobile/features/call/domain/usecases/get_active_call.dart';
+import 'package:lovesync_mobile/features/call/domain/usecases/issue_call_token.dart';
+import 'package:lovesync_mobile/features/call/domain/usecases/reject_call.dart';
+import 'package:lovesync_mobile/features/call/domain/usecases/start_call.dart';
 
 enum CallPhase { idle, starting, incoming, outgoing, ongoing, ending }
 
 class CallProvider extends ChangeNotifier with WidgetsBindingObserver {
-  CallProvider(this._remoteDatasource, {this.onSessionRevoked}) {
+  CallProvider({
+    required StartCall startCall,
+    required AcceptCall acceptCall,
+    required RejectCall rejectCall,
+    required CancelCall cancelCall,
+    required EndCall endCall,
+    required GetActiveCall getActiveCall,
+    required IssueCallToken issueCallToken,
+    this.onSessionRevoked,
+  }) : _startCallUsecase = startCall,
+       _acceptCall = acceptCall,
+       _rejectCall = rejectCall,
+       _cancelCall = cancelCall,
+       _endCall = endCall,
+       _getActiveCall = getActiveCall,
+       _issueCallToken = issueCallToken {
     WidgetsBinding.instance.addObserver(this);
     _foregroundMessageSubscription = FirebaseMessaging.onMessage.listen(
       _handlePushMessage,
@@ -21,7 +42,13 @@ class CallProvider extends ChangeNotifier with WidgetsBindingObserver {
     unawaited(_readInitialMessage());
   }
 
-  final CallRemoteDatasource _remoteDatasource;
+  final StartCall _startCallUsecase;
+  final AcceptCall _acceptCall;
+  final RejectCall _rejectCall;
+  final CancelCall _cancelCall;
+  final EndCall _endCall;
+  final GetActiveCall _getActiveCall;
+  final IssueCallToken _issueCallToken;
   final Future<void> Function(String message)? onSessionRevoked;
 
   String _token = '';
@@ -100,11 +127,7 @@ class CallProvider extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
 
     try {
-      final response =
-          (await (isVideo
-                  ? _remoteDatasource.createVideoCall()
-                  : _remoteDatasource.createAudioCall()))
-              .toEntity();
+      final response = await _startCallUsecase(isVideo: isVideo);
       _applyConnection(response);
       _phase = CallPhase.outgoing;
       notifyListeners();
@@ -119,7 +142,7 @@ class CallProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (call == null || _phase != CallPhase.incoming) return;
     _errorMessage = null;
     try {
-      final response = (await _remoteDatasource.accept(call.id)).toEntity();
+      final response = await _acceptCall(call.id);
       _applyConnection(response);
       _phase = CallPhase.ongoing;
       notifyListeners();
@@ -136,7 +159,7 @@ class CallProvider extends ChangeNotifier with WidgetsBindingObserver {
     _phase = CallPhase.ending;
     notifyListeners();
     try {
-      await _remoteDatasource.reject(call.id);
+      await _rejectCall(call.id);
     } finally {
       _reset();
     }
@@ -155,9 +178,9 @@ class CallProvider extends ChangeNotifier with WidgetsBindingObserver {
     try {
       if (previousPhase == CallPhase.outgoing ||
           call.status == CallStatus.ringing) {
-        await _remoteDatasource.cancel(call.id);
+        await _cancelCall(call.id);
       } else {
-        await _remoteDatasource.end(call.id);
+        await _endCall(call.id);
       }
     } finally {
       _reset();
@@ -167,19 +190,19 @@ class CallProvider extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> refreshActiveCall() async {
     if (_token.isEmpty) return;
     try {
-      final model = await _remoteDatasource.getActiveCall();
-      if (model == null) {
+      final activeConnection = await _getActiveCall();
+      if (activeConnection == null) {
         if (_activeCall != null) _reset();
         return;
       }
 
-      var connection = model.toEntity();
+      var connection = activeConnection;
       final call = connection.call;
       final canRequestToken =
           call.status == CallStatus.ongoing ||
           (call.status == CallStatus.ringing && call.isCaller(_userId));
       if (connection.liveKit == null && canRequestToken) {
-        connection = (await _remoteDatasource.issueToken(call.id)).toEntity();
+        connection = await _issueCallToken(call.id);
       }
       _applyConnection(connection);
       _derivePhase(_activeCall!);

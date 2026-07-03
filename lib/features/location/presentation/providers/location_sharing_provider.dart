@@ -3,9 +3,13 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:lovesync_mobile/features/location/data/datasources/location_remote_datasource.dart';
 import 'package:lovesync_mobile/features/location/data/datasources/location_socket_datasource.dart';
 import 'package:lovesync_mobile/features/location/domain/entities/live_location.dart';
+import 'package:lovesync_mobile/features/location/domain/usecases/get_live_locations.dart';
+import 'package:lovesync_mobile/features/location/domain/usecases/post_send_location_snapshot.dart';
+import 'package:lovesync_mobile/features/location/domain/usecases/post_start_live_location.dart';
+import 'package:lovesync_mobile/features/location/domain/usecases/post_stop_live_location.dart';
+import 'package:lovesync_mobile/features/location/domain/usecases/put_update_live_location.dart';
 
 class LocationPermissionException implements Exception {
   const LocationPermissionException(
@@ -21,9 +25,23 @@ class LocationPermissionException implements Exception {
 }
 
 class LocationSharingProvider extends ChangeNotifier {
-  LocationSharingProvider(this._remote);
+  LocationSharingProvider({
+    required GetLiveLocations getLiveLocations,
+    required PostSendLocationSnapshot postSendLocationSnapshot,
+    required PostStartLiveLocation postStartLiveLocation,
+    required PostStopLiveLocation postStopLiveLocation,
+    required PutUpdateLiveLocation putUpdateLiveLocation,
+  }) : _getLiveLocations = getLiveLocations,
+       _postSendLocationSnapshot = postSendLocationSnapshot,
+       _postStartLiveLocation = postStartLiveLocation,
+       _postStopLiveLocation = postStopLiveLocation,
+       _putUpdateLiveLocation = putUpdateLiveLocation;
 
-  final LocationRemoteDatasource _remote;
+  final GetLiveLocations _getLiveLocations;
+  final PostSendLocationSnapshot _postSendLocationSnapshot;
+  final PostStartLiveLocation _postStartLiveLocation;
+  final PostStopLiveLocation _postStopLiveLocation;
+  final PutUpdateLiveLocation _putUpdateLiveLocation;
 
   String _token = '';
   String _userId = '';
@@ -85,12 +103,9 @@ class LocationSharingProvider extends ChangeNotifier {
     }
 
     try {
-      final results = await Future.wait([
-        _remote.getMyLive(),
-        _remote.getPartnerLive(),
-      ]);
-      _myLocation = results[0];
-      _partnerLocation = results[1];
+      final locations = await _getLiveLocations();
+      _myLocation = locations.mine;
+      _partnerLocation = locations.partner;
       _scheduleExpiry();
     } catch (_) {
       if (!silent) {
@@ -135,7 +150,7 @@ class LocationSharingProvider extends ChangeNotifier {
   }
 
   Future<void> sendSnapshot(Position position) {
-    return _remote.sendSnapshot(position);
+    return _postSendLocationSnapshot(position);
   }
 
   Future<void> startSharing({
@@ -147,7 +162,7 @@ class LocationSharingProvider extends ChangeNotifier {
     _setLoading(true);
     try {
       final position = initialPosition ?? await getCurrentPosition();
-      final response = await _remote.startLive(
+      final response = await _postStartLiveLocation(
         position,
         durationMinutes: durationMinutes,
         untilStopped: untilStopped,
@@ -175,7 +190,7 @@ class LocationSharingProvider extends ChangeNotifier {
     if (_isLoading) return;
     _setLoading(true);
     try {
-      await _remote.stopLive();
+      await _postStopLiveLocation();
       await _positionSubscription?.cancel();
       _positionSubscription = null;
       _myLocation = null;
@@ -259,7 +274,7 @@ class LocationSharingProvider extends ChangeNotifier {
         }
       } on LocationSocketUpdateException catch (error) {
         if (!error.allowRestFallback) rethrow;
-        response = await _remote.updateLive(position);
+        response = await _putUpdateLiveLocation(position);
       }
       _lastUploadAt = now;
       _myLocation =

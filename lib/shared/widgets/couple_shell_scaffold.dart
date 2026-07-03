@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lovesync_mobile/app_routes.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/features/couple/data/datasources/couple_remote_datasource.dart';
 import 'package:lovesync_mobile/features/couple/data/repositories/couple_repository_impl.dart';
@@ -74,7 +75,7 @@ class _CoupleShellScaffoldState extends State<CoupleShellScaffold> {
           if (isCouple)
             IconButton(
               onPressed: () {
-                context.push('/message');
+                context.push(AppRoutes.message);
               },
               icon: const Icon(
                 Icons.message_outlined,
@@ -83,7 +84,7 @@ class _CoupleShellScaffoldState extends State<CoupleShellScaffold> {
             )
           else
             IconButton(
-              onPressed: () => {context.push('/couple/confirmation')},
+              onPressed: () => {context.push(AppRoutes.coupleConfirmation)},
               icon: Icon(
                 Icons.notifications_none,
                 color: const Color(0xFF1A1C1D),

@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lovesync_mobile/app_routes.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:lovesync_mobile/features/auth/data/datasources/google_auth_datasource.dart';
@@ -10,6 +11,9 @@ import 'package:lovesync_mobile/features/auth/data/repositories/auth_repository_
 import 'package:lovesync_mobile/features/auth/domain/entities/login_response.dart';
 import 'package:lovesync_mobile/features/auth/domain/usecases/post_google_login.dart';
 import 'package:lovesync_mobile/features/auth/domain/usecases/post_login.dart';
+import 'package:lovesync_mobile/features/e2ee/data/repositories/e2ee_repository_impl.dart';
+import 'package:lovesync_mobile/features/e2ee/domain/usecases/e2ee_manager.dart';
+import 'package:lovesync_mobile/features/e2ee/presentation/widgets/e2ee_recovery_code_sheet.dart';
 import 'package:lovesync_mobile/features/user/data/datasources/user_remote_datasource.dart';
 import 'package:lovesync_mobile/features/user/data/repositories/user_repository_impl.dart';
 import 'package:lovesync_mobile/features/user/domain/usecases/post_register_device.dart';
@@ -29,6 +33,7 @@ class _LoginPageState extends State<LoginPage> {
   late final PostGoogleLogin _postGoogleLogin;
   late final PostRegisterDevice _postRegisterDevice;
   late final GoogleAuthDatasource _googleAuthDatasource;
+  late final E2eeManager _e2eeManager;
 
   bool _isShowPassword = false;
   final TextEditingController _emailController = TextEditingController();
@@ -45,6 +50,9 @@ class _LoginPageState extends State<LoginPage> {
     _postLogin = PostLogin(authRepository);
     _postGoogleLogin = PostGoogleLogin(authRepository);
     _googleAuthDatasource = GoogleAuthDatasource();
+    _e2eeManager = E2eeManager(
+      repository: E2eeRepositoryImpl.fromDio(context.read<DioClient>().dio),
+    );
     _postRegisterDevice = PostRegisterDevice(
       UserRepositoryImpl(UserRemoteDatasource(context.read<DioClient>().dio)),
     );
@@ -139,7 +147,17 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _completeLogin(LoginResponse response) async {
-    await context.read<AuthProvider>().login(response.accessToken, response.id);
+    final authProvider = context.read<AuthProvider>();
+    await authProvider.login(response.accessToken, response.id);
+    final e2eeReady = await _ensureE2eeReady(response);
+    if (!e2eeReady) {
+      await authProvider.logout();
+      await _resetGoogleSession();
+      if (mounted) {
+        _showMessage('Bạn cần hoàn tất mã khôi phục để dùng tài khoản này.');
+      }
+      return;
+    }
     try {
       final fcmToken = await FirebaseMessaging.instance.getToken();
       if (fcmToken?.isNotEmpty == true) {
@@ -150,7 +168,49 @@ class _LoginPageState extends State<LoginPage> {
     }
     if (!mounted) return;
     _showMessage('Đăng nhập thành công!');
-    context.go('/couple');
+    context.go(AppRoutes.couple);
+  }
+
+  Future<bool> _ensureE2eeReady(LoginResponse response) async {
+    if (response.e2eeSetupRequired) {
+      final code = await showE2eeRecoveryCodeSheet(
+        context: context,
+        mode: E2eeRecoveryCodeMode.create,
+      );
+      if (code == null) return false;
+      try {
+        await _e2eeManager.setupNewKeys(
+          userId: response.id,
+          recoveryCode: code,
+        );
+        return true;
+      } catch (error) {
+        if (mounted) {
+          _showMessage(error.toString().replaceFirst('Exception: ', ''));
+        }
+        return false;
+      }
+    }
+
+    if (await _e2eeManager.hasLocalKeys(response.id)) {
+      return true;
+    }
+
+    if (!mounted) return false;
+    final code = await showE2eeRecoveryCodeSheet(
+      context: context,
+      mode: E2eeRecoveryCodeMode.recover,
+    );
+    if (code == null) return false;
+    try {
+      await _e2eeManager.recoverKeys(userId: response.id, recoveryCode: code);
+      return true;
+    } catch (_) {
+      if (mounted) {
+        _showMessage('Mã khôi phục không đúng hoặc khóa đã bị hỏng.');
+      }
+      return false;
+    }
   }
 
   void _showMessage(String message) {
@@ -301,7 +361,7 @@ class _LoginPageState extends State<LoginPage> {
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () {
-                        context.push("/forgot-password");
+                        context.push(AppRoutes.forgotPassword);
                       },
 
                       child: const Text("Quên mật khẩu?"),
@@ -394,7 +454,7 @@ class _LoginPageState extends State<LoginPage> {
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                               onPressed: () {
-                                context.push("/register");
+                                context.push(AppRoutes.register);
                               },
                               child: const Text("Đăng ký ngay"),
                             ),

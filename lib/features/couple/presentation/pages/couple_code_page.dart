@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lovesync_mobile/app_routes.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/features/couple/data/datasources/couple_remote_datasource.dart';
 import 'package:lovesync_mobile/features/couple/data/repositories/couple_repository_impl.dart';
@@ -51,7 +52,7 @@ class _CoupleCodePageState extends State<CoupleCodePage> {
   }
 
   void _onClickScan(BuildContext context) {
-    context.push("/couple/scan");
+    context.push(AppRoutes.coupleScan);
   }
 
   @override

@@ -8,9 +8,23 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/core/storage/impl/shared_preferences_auth_storage.dart';
 import 'package:lovesync_mobile/features/call/data/datasources/call_remote_datasource.dart';
+import 'package:lovesync_mobile/features/call/data/repositories/call_repository_impl.dart';
+import 'package:lovesync_mobile/features/call/domain/usecases/accept_call.dart';
+import 'package:lovesync_mobile/features/call/domain/usecases/cancel_call.dart';
+import 'package:lovesync_mobile/features/call/domain/usecases/end_call.dart';
+import 'package:lovesync_mobile/features/call/domain/usecases/get_active_call.dart';
+import 'package:lovesync_mobile/features/call/domain/usecases/issue_call_token.dart';
+import 'package:lovesync_mobile/features/call/domain/usecases/reject_call.dart';
+import 'package:lovesync_mobile/features/call/domain/usecases/start_call.dart';
 import 'package:lovesync_mobile/features/call/presentation/providers/call_provider.dart';
 import 'package:lovesync_mobile/features/call/presentation/widgets/call_overlay.dart';
 import 'package:lovesync_mobile/features/location/data/datasources/location_remote_datasource.dart';
+import 'package:lovesync_mobile/features/location/data/repositories/location_repository_impl.dart';
+import 'package:lovesync_mobile/features/location/domain/usecases/get_live_locations.dart';
+import 'package:lovesync_mobile/features/location/domain/usecases/post_send_location_snapshot.dart';
+import 'package:lovesync_mobile/features/location/domain/usecases/post_start_live_location.dart';
+import 'package:lovesync_mobile/features/location/domain/usecases/post_stop_live_location.dart';
+import 'package:lovesync_mobile/features/location/domain/usecases/put_update_live_location.dart';
 import 'package:lovesync_mobile/features/location/presentation/providers/location_sharing_provider.dart';
 import 'package:lovesync_mobile/providers/auth_provider.dart';
 import 'app_router.dart';
@@ -38,13 +52,21 @@ void main() async {
           ),
         ),
         ChangeNotifierProxyProvider<AuthProvider, CallProvider>(
-          create: (context) =>
-              CallProvider(
-                CallRemoteDatasource(context.read<DioClient>().dio),
-                onSessionRevoked: context
-                    .read<AuthProvider>()
-                    .invalidateSession,
-              ),
+          create: (context) {
+            final repository = CallRepositoryImpl(
+              CallRemoteDatasource(context.read<DioClient>().dio),
+            );
+            return CallProvider(
+              startCall: StartCall(repository),
+              acceptCall: AcceptCall(repository),
+              rejectCall: RejectCall(repository),
+              cancelCall: CancelCall(repository),
+              endCall: EndCall(repository),
+              getActiveCall: GetActiveCall(repository),
+              issueCallToken: IssueCallToken(repository),
+              onSessionRevoked: context.read<AuthProvider>().invalidateSession,
+            );
+          },
           update: (_, authProvider, callProvider) {
             callProvider?.updateAuth(
               token: authProvider.accessToken,
@@ -54,9 +76,18 @@ void main() async {
           },
         ),
         ChangeNotifierProxyProvider<AuthProvider, LocationSharingProvider>(
-          create: (context) => LocationSharingProvider(
-            LocationRemoteDatasource(context.read<DioClient>().dio),
-          ),
+          create: (context) {
+            final repository = LocationRepositoryImpl(
+              LocationRemoteDatasource(context.read<DioClient>().dio),
+            );
+            return LocationSharingProvider(
+              getLiveLocations: GetLiveLocations(repository),
+              postSendLocationSnapshot: PostSendLocationSnapshot(repository),
+              postStartLiveLocation: PostStartLiveLocation(repository),
+              postStopLiveLocation: PostStopLiveLocation(repository),
+              putUpdateLiveLocation: PutUpdateLiveLocation(repository),
+            );
+          },
           update: (_, authProvider, locationProvider) {
             unawaited(
               locationProvider?.updateAuth(

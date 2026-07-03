@@ -1,18 +1,24 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:lovesync_mobile/features/calendar/data/datasources/calendar_remote_datasource.dart';
 import 'package:lovesync_mobile/features/calendar/domain/entities/calendar_event.dart';
+import 'package:lovesync_mobile/features/calendar/domain/usecases/create_calendar_event.dart';
+import 'package:lovesync_mobile/features/calendar/domain/usecases/delete_calendar_event.dart';
+import 'package:lovesync_mobile/features/calendar/domain/usecases/update_calendar_event.dart';
 
 class CalendarEventFormPage extends StatefulWidget {
   const CalendarEventFormPage({
     super.key,
-    required this.datasource,
+    required this.createCalendarEvent,
+    required this.updateCalendarEvent,
+    required this.deleteCalendarEvent,
     this.event,
     this.initialDate,
   });
 
-  final CalendarRemoteDatasource datasource;
+  final CreateCalendarEvent createCalendarEvent;
+  final UpdateCalendarEvent updateCalendarEvent;
+  final DeleteCalendarEvent deleteCalendarEvent;
   final CalendarEvent? event;
   final DateTime? initialDate;
 
@@ -125,29 +131,29 @@ class _CalendarEventFormPageState extends State<CalendarEventFormPage> {
             _selectedTime.minute,
           );
     final location = _locationController.text.trim();
-    final payload = <String, dynamic>{
-      'type': CalendarRemoteDatasource.typeValue(_type),
-      'title': _titleController.text.trim(),
-      'description': _descriptionController.text.trim(),
-      'startsAt': startsAt.toUtc().toIso8601String(),
-      if (_type == CalendarEventType.appointment &&
-          (location.isNotEmpty || _isEditing))
-        'location': location,
-      'recurrence': CalendarRemoteDatasource.recurrenceValue(
-        _type == CalendarEventType.appointment
-            ? CalendarRecurrence.none
-            : _recurrence,
-      ),
-      'reminderEnabled': _reminderEnabled,
-      'reminderMinutesBefore': reminderMinutes,
-    };
+    final input = CalendarEventInput(
+      type: _type,
+      title: _titleController.text.trim(),
+      description: _descriptionController.text.trim(),
+      startsAt: startsAt,
+      location:
+          _type == CalendarEventType.appointment &&
+              (location.isNotEmpty || _isEditing)
+          ? location
+          : null,
+      recurrence: _type == CalendarEventType.appointment
+          ? CalendarRecurrence.none
+          : _recurrence,
+      reminderEnabled: _reminderEnabled,
+      reminderMinutesBefore: reminderMinutes,
+    );
 
     setState(() => _isSaving = true);
     try {
       if (_isEditing) {
-        await widget.datasource.updateEvent(widget.event!.id, payload);
+        await widget.updateCalendarEvent(widget.event!.id, input);
       } else {
-        await widget.datasource.createEvent(payload);
+        await widget.createCalendarEvent(input);
       }
       if (mounted) Navigator.of(context).pop(true);
     } on DioException catch (error) {
@@ -186,7 +192,7 @@ class _CalendarEventFormPageState extends State<CalendarEventFormPage> {
 
     setState(() => _isDeleting = true);
     try {
-      await widget.datasource.deleteEvent(widget.event!.id);
+      await widget.deleteCalendarEvent(widget.event!.id);
       if (mounted) Navigator.of(context).pop(true);
     } on DioException catch (error) {
       if (mounted) _showError(_errorMessage(error));

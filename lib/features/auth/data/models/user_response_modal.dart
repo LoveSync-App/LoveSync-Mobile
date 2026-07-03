@@ -3,12 +3,14 @@ class UserResponseModal {
   final String name;
   final String email;
   final String avatar;
+  final bool e2eeSetupRequired;
 
   UserResponseModal({
     required this.id,
     required this.name,
     required this.email,
     required this.avatar,
+    required this.e2eeSetupRequired,
   });
 
   factory UserResponseModal.fromJson(Map<String, dynamic> json) {
@@ -17,6 +19,7 @@ class UserResponseModal {
       name: (json['name'] ?? '').toString(),
       email: (json['email'] ?? '').toString(),
       avatar: (json['avatar'] ?? '').toString(),
+      e2eeSetupRequired: json['e2eeSetupRequired'] == true,
     );
   }
 }

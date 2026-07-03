@@ -1,3 +1,5 @@
+import 'package:lovesync_mobile/features/e2ee/domain/entities/e2ee_message_encryption.dart';
+
 enum ChatMessageType { text, image, video, call, location }
 
 class ChatMessage {
@@ -10,6 +12,7 @@ class ChatMessage {
     this.type = ChatMessageType.text,
     this.entityId,
     this.payload = const {},
+    this.encryption,
   });
 
   final String? id;
@@ -20,6 +23,25 @@ class ChatMessage {
   final ChatMessageType type;
   final String? entityId;
   final Map<String, dynamic> payload;
+  final E2eeMessageEncryption? encryption;
+
+  ChatMessage copyWith({
+    String? text,
+    List<String>? attachments,
+    E2eeMessageEncryption? encryption,
+  }) {
+    return ChatMessage(
+      id: id,
+      text: text ?? this.text,
+      sentAt: sentAt,
+      isMine: isMine,
+      attachments: attachments ?? this.attachments,
+      type: type,
+      entityId: entityId,
+      payload: payload,
+      encryption: encryption ?? this.encryption,
+    );
+  }
 }
 
 class ChatTimelinePage {

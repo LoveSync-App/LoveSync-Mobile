@@ -2,8 +2,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
-import 'package:lovesync_mobile/features/calendar/data/datasources/calendar_remote_datasource.dart';
+import 'package:lovesync_mobile/features/calendar/data/repositories/calendar_repository_impl.dart';
 import 'package:lovesync_mobile/features/calendar/domain/entities/calendar_event.dart';
+import 'package:lovesync_mobile/features/calendar/domain/usecases/create_calendar_event.dart';
+import 'package:lovesync_mobile/features/calendar/domain/usecases/delete_calendar_event.dart';
+import 'package:lovesync_mobile/features/calendar/domain/usecases/get_calendar_event.dart';
+import 'package:lovesync_mobile/features/calendar/domain/usecases/get_calendar_events.dart';
+import 'package:lovesync_mobile/features/calendar/domain/usecases/update_calendar_event.dart';
 import 'package:lovesync_mobile/features/calendar/presentation/pages/calendar_event_form_page.dart';
 import 'package:provider/provider.dart';
 
@@ -15,7 +20,11 @@ class CalendarPage extends StatefulWidget {
 }
 
 class _CalendarPageState extends State<CalendarPage> {
-  late final CalendarRemoteDatasource _datasource;
+  late final GetCalendarEvents _getCalendarEvents;
+  late final GetCalendarEvent _getCalendarEvent;
+  late final CreateCalendarEvent _createCalendarEvent;
+  late final UpdateCalendarEvent _updateCalendarEvent;
+  late final DeleteCalendarEvent _deleteCalendarEvent;
   final List<CalendarEvent> _events = [];
 
   late DateTime _visibleMonth;
@@ -32,7 +41,14 @@ class _CalendarPageState extends State<CalendarPage> {
     final today = DateTime.now();
     _visibleMonth = DateTime(today.year, today.month);
     _selectedDate = DateTime(today.year, today.month, today.day);
-    _datasource = CalendarRemoteDatasource(context.read<DioClient>().dio);
+    final repository = CalendarRepositoryImpl.fromDio(
+      context.read<DioClient>().dio,
+    );
+    _getCalendarEvents = GetCalendarEvents(repository);
+    _getCalendarEvent = GetCalendarEvent(repository);
+    _createCalendarEvent = CreateCalendarEvent(repository);
+    _updateCalendarEvent = UpdateCalendarEvent(repository);
+    _deleteCalendarEvent = DeleteCalendarEvent(repository);
     _loadMonth();
   }
 
@@ -60,7 +76,7 @@ class _CalendarPageState extends State<CalendarPage> {
     ).subtract(const Duration(milliseconds: 1));
 
     try {
-      final events = await _datasource.getEvents(from: from, to: to);
+      final events = await _getCalendarEvents(from: from, to: to);
       events.sort((first, second) {
         return first.occurrenceAt.compareTo(second.occurrenceAt);
       });
@@ -121,7 +137,7 @@ class _CalendarPageState extends State<CalendarPage> {
 
     CalendarEvent event = summary;
     try {
-      final detail = await _datasource.getEvent(summary.id);
+      final detail = await _getCalendarEvent(summary.id);
       event = CalendarEvent(
         id: detail.id,
         type: detail.type,
@@ -164,7 +180,9 @@ class _CalendarPageState extends State<CalendarPage> {
       builder: (sheetContext) => SizedBox(
         height: MediaQuery.sizeOf(sheetContext).height * 0.88,
         child: CalendarEventFormPage(
-          datasource: _datasource,
+          createCalendarEvent: _createCalendarEvent,
+          updateCalendarEvent: _updateCalendarEvent,
+          deleteCalendarEvent: _deleteCalendarEvent,
           event: event,
           initialDate: initialDate,
         ),

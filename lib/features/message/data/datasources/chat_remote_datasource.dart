@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:lovesync_mobile/features/e2ee/domain/entities/e2ee_message_encryption.dart';
 import 'package:lovesync_mobile/features/message/data/models/chat_message_model.dart';
 import 'package:lovesync_mobile/features/message/data/models/partner_presence_model.dart';
 
@@ -23,6 +24,7 @@ class ChatRemoteDatasource {
 
   Future<void> sendMessage({
     String? message,
+    E2eeMessageEncryption? encryption,
     List<String> attachments = const [],
     List<String> attachmentUrls = const [],
   }) async {
@@ -31,6 +33,7 @@ class ChatRemoteDatasource {
       data: {
         if (message != null && message.trim().isNotEmpty)
           'message': message.trim(),
+        if (encryption != null) 'encryption': encryption.toJson(),
         if (attachments.isNotEmpty) 'attachments': attachments,
         if (attachmentUrls.isNotEmpty) 'attachmentUrls': attachmentUrls,
       },

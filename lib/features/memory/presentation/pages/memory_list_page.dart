@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lovesync_mobile/app_routes.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/features/memory/data/datasources/memory_remote_datasource.dart';
 import 'package:lovesync_mobile/features/memory/data/repositories/memory_repository_impl.dart';
@@ -106,7 +107,7 @@ class _MemoryListPageState extends State<MemoryListPage> {
   }
 
   Future<void> _openShareMemory() async {
-    final created = await context.push<bool>('/memory/create');
+    final created = await context.push<bool>(AppRoutes.memoryCreate);
     if (created == true && mounted) {
       await _fetchMemories(showLoading: false);
     }
@@ -174,85 +175,86 @@ class _MemoryListPageState extends State<MemoryListPage> {
                         )
                       : ListView.builder(
                           physics: const AlwaysScrollableScrollPhysics(),
-                         itemCount: memories.length,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 24,
-                          horizontal: 16,
-                        ),
-                        itemBuilder: (context, index) {
-                          final currentItem = memories[index];
+                          itemCount: memories.length,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 24,
+                            horizontal: 16,
+                          ),
+                          itemBuilder: (context, index) {
+                            final currentItem = memories[index];
 
-                          // Xác định item đầu tiên của tháng
-                          bool isFirstInMonth = false;
-                          if (index == 0) {
-                            isFirstInMonth = true;
-                          } else {
-                            final prevItem = memories[index - 1];
-                            if (currentItem.time.month != prevItem.time.month ||
-                                currentItem.time.year != prevItem.time.year) {
+                            // Xác định item đầu tiên của tháng
+                            bool isFirstInMonth = false;
+                            if (index == 0) {
                               isFirstInMonth = true;
+                            } else {
+                              final prevItem = memories[index - 1];
+                              if (currentItem.time.month !=
+                                      prevItem.time.month ||
+                                  currentItem.time.year != prevItem.time.year) {
+                                isFirstInMonth = true;
+                              }
                             }
-                          }
 
-                          // Áp dụng giải pháp bọc Stack bên ngoài thay vì IntrinsicHeight tốn hiệu năng
-                          return Stack(
-                            children: [
-                              // ĐƯỜNG TRỤC DỌC: Vẽ bằng border left của Container giúp nét vẽ liền mạch mượt mà
-                              Positioned(
-                                top: index == 0
-                                    ? 30
-                                    : 0, // Item đầu tiên thụt xuống tránh đứt đuôi đầu
-                                bottom: index == memories.length - 1
-                                    ? 100
-                                    : 0, // Item cuối ngắt sớm đường line
-                                left:
-                                    28, // Căn giữa chính xác với Node tròn bên dưới (60 width / 2 = 30 trừ nửa nét border)
-                                child: Container(
-                                  width: 2,
-                                  decoration: BoxDecoration(
-                                    border: Border(
-                                      left: BorderSide(
-                                        color: Colors.grey.withValues(
-                                          alpha: 0.3,
+                            // Áp dụng giải pháp bọc Stack bên ngoài thay vì IntrinsicHeight tốn hiệu năng
+                            return Stack(
+                              children: [
+                                // ĐƯỜNG TRỤC DỌC: Vẽ bằng border left của Container giúp nét vẽ liền mạch mượt mà
+                                Positioned(
+                                  top: index == 0
+                                      ? 30
+                                      : 0, // Item đầu tiên thụt xuống tránh đứt đuôi đầu
+                                  bottom: index == memories.length - 1
+                                      ? 100
+                                      : 0, // Item cuối ngắt sớm đường line
+                                  left:
+                                      28, // Căn giữa chính xác với Node tròn bên dưới (60 width / 2 = 30 trừ nửa nét border)
+                                  child: Container(
+                                    width: 2,
+                                    decoration: BoxDecoration(
+                                      border: Border(
+                                        left: BorderSide(
+                                          color: Colors.grey.withValues(
+                                            alpha: 0.3,
+                                          ),
+                                          width: 2,
                                         ),
-                                        width: 2,
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
 
-                              // KHỐI NỘI DUNG CHÍNH (Row ngang)
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment
-                                    .start, // Giúp các node neo cố định ở đỉnh top Card
-                                children: [
-                                  // 1. Khối chứa Node hiển thị thời gian (Tháng hoặc Chấm tròn)
-                                  SizedBox(
-                                    width: 58,
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(
-                                        top: 12,
-                                      ), // Căn node đều với lề trên của Card
-                                      child: Center(
-                                        child: isFirstInMonth
-                                            ? _buildMonthYearNode(
-                                                currentItem.time,
-                                              )
-                                            : _buildDotNode(),
+                                // KHỐI NỘI DUNG CHÍNH (Row ngang)
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment
+                                      .start, // Giúp các node neo cố định ở đỉnh top Card
+                                  children: [
+                                    // 1. Khối chứa Node hiển thị thời gian (Tháng hoặc Chấm tròn)
+                                    SizedBox(
+                                      width: 58,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          top: 12,
+                                        ), // Căn node đều với lề trên của Card
+                                        child: Center(
+                                          child: isFirstInMonth
+                                              ? _buildMonthYearNode(
+                                                  currentItem.time,
+                                                )
+                                              : _buildDotNode(),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
+                                    const SizedBox(width: 8),
 
-                                  // 2. Nội dung Card Memory bên phải
-                                  Expanded(
-                                    child: _buildMemoryItem(currentItem),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          );
+                                    // 2. Nội dung Card Memory bên phải
+                                    Expanded(
+                                      child: _buildMemoryItem(currentItem),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            );
                           },
                         ),
                 ),

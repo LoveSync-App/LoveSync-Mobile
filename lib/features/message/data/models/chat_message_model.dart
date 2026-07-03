@@ -1,3 +1,4 @@
+import 'package:lovesync_mobile/features/e2ee/domain/entities/e2ee_message_encryption.dart';
 import 'package:lovesync_mobile/features/message/domain/entities/chat_message.dart';
 
 class ChatMessageModel {
@@ -10,6 +11,7 @@ class ChatMessageModel {
     this.type = ChatMessageType.text,
     this.entityId,
     this.payload = const {},
+    this.encryption,
   });
 
   final String? id;
@@ -20,6 +22,7 @@ class ChatMessageModel {
   final ChatMessageType type;
   final String? entityId;
   final Map<String, dynamic> payload;
+  final E2eeMessageEncryption? encryption;
 
   factory ChatMessageModel.fromSocket(dynamic data) {
     final json = _asJson(data);
@@ -53,6 +56,7 @@ class ChatMessageModel {
       type: _readType(json),
       entityId: _readString(json, ['entityId', 'entity_id']),
       payload: _asJson(json['payload']),
+      encryption: _readEncryption(json['encryption']),
     );
   }
 
@@ -66,6 +70,7 @@ class ChatMessageModel {
       type: type,
       entityId: entityId,
       payload: payload,
+      encryption: encryption,
     );
   }
 
@@ -147,6 +152,13 @@ class ChatMessageModel {
       default:
         return ChatMessageType.text;
     }
+  }
+
+  static E2eeMessageEncryption? _readEncryption(dynamic value) {
+    if (value == null) return null;
+    final json = _asJson(value);
+    if (json.isEmpty) return null;
+    return E2eeMessageEncryption.fromJson(json);
   }
 }
 

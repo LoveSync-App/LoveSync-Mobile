@@ -1,10 +1,17 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lovesync_mobile/app_routes.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:lovesync_mobile/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:lovesync_mobile/features/auth/domain/entities/login_response.dart';
+import 'package:lovesync_mobile/features/auth/domain/usecases/post_login.dart';
 import 'package:lovesync_mobile/features/auth/domain/usecases/post_register.dart';
+import 'package:lovesync_mobile/features/e2ee/data/repositories/e2ee_repository_impl.dart';
+import 'package:lovesync_mobile/features/e2ee/domain/usecases/e2ee_manager.dart';
+import 'package:lovesync_mobile/features/e2ee/presentation/widgets/e2ee_recovery_code_sheet.dart';
+import 'package:lovesync_mobile/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -23,6 +30,8 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _isLoading = false;
 
   late final PostRegister _postRegister;
+  late final PostLogin _postLogin;
+  late final E2eeManager _e2eeManager;
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -33,8 +42,13 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void initState() {
     super.initState();
-    _postRegister = PostRegister(
-      AuthRepositoryImpl(AuthRemoteDatasource(context.read<DioClient>().dio)),
+    final authRepository = AuthRepositoryImpl(
+      AuthRemoteDatasource(context.read<DioClient>().dio),
+    );
+    _postRegister = PostRegister(authRepository);
+    _postLogin = PostLogin(authRepository);
+    _e2eeManager = E2eeManager(
+      repository: E2eeRepositoryImpl.fromDio(context.read<DioClient>().dio),
     );
   }
 
@@ -73,11 +87,20 @@ class _RegisterPageState extends State<RegisterPage> {
         _isLoading = true;
       });
       await _postRegister(email, password, confirmPassword, name);
+      final loginResponse = await _postLogin(email, password);
+      if (!mounted) return;
+      final authProvider = context.read<AuthProvider>();
+      await authProvider.login(loginResponse.accessToken, loginResponse.id);
+      final e2eeReady = await _setupE2eeForNewAccount(loginResponse);
+      if (!e2eeReady) {
+        await authProvider.logout();
+        return;
+      }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đăng ký thành công')),
-        );
-        context.pop();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Đăng ký thành công')));
+        context.go(AppRoutes.couple);
       }
     } on DioException catch (e) {
       if (e.response?.statusCode == 409) {
@@ -89,16 +112,43 @@ class _RegisterPageState extends State<RegisterPage> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Đăng ký thất bại, vui lòng thử lại'),
-            ),
+            SnackBar(content: Text('Đăng ký thất bại, vui lòng thử lại')),
           );
         }
       }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<bool> _setupE2eeForNewAccount(LoginResponse response) async {
+    final code = await showE2eeRecoveryCodeSheet(
+      context: context,
+      mode: E2eeRecoveryCodeMode.create,
+    );
+    if (code == null) {
+      if (!mounted) return false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bạn cần tạo mã khôi phục để tiếp tục.')),
+      );
+      return false;
+    }
+    try {
+      await _e2eeManager.setupNewKeys(userId: response.id, recoveryCode: code);
+      return true;
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
+          ),
+        );
+      }
+      return false;
     }
   }
 

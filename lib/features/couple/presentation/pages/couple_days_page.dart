@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lovesync_mobile/app_routes.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/features/couple/data/datasources/couple_remote_datasource.dart';
 import 'package:lovesync_mobile/features/couple/data/repositories/couple_repository_impl.dart';
@@ -54,9 +55,9 @@ class _CoupleDaysPageState extends State<CoupleDaysPage>
       await _fetchCoupleDays();
       if (mounted) setState(() => isLoading = false);
     } on DioException {
-      if (mounted) context.go("/couple/code");
+      if (mounted) context.go(AppRoutes.coupleCode);
     } catch (_) {
-      if (mounted) context.go("/couple/code");
+      if (mounted) context.go(AppRoutes.coupleCode);
     }
   }
 

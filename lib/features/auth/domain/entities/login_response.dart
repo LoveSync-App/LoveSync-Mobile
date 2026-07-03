@@ -5,6 +5,7 @@ class LoginResponse {
   final String email;
   final String name;
   final String avatar;
+  final bool e2eeSetupRequired;
 
   LoginResponse({
     required this.id,
@@ -12,5 +13,6 @@ class LoginResponse {
     required this.name,
     required this.accessToken,
     required this.avatar,
+    required this.e2eeSetupRequired,
   });
 }

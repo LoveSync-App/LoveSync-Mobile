@@ -10,6 +10,7 @@ void main() {
         'name': 'Love Sync',
         'avatar': 'https://example.com/avatar.jpg',
         'authProviders': ['password', 'google.com'],
+        'e2eeSetupRequired': true,
       },
       'loginProvider': 'google.com',
       'accessToken': 'application-jwt',
@@ -19,5 +20,6 @@ void main() {
     expect(response.user.id, 'user-id');
     expect(response.user.email, 'user@example.com');
     expect(response.user.name, 'Love Sync');
+    expect(response.user.e2eeSetupRequired, isTrue);
   });
 }

@@ -3,6 +3,30 @@ import 'package:lovesync_mobile/features/message/data/models/chat_message_model.
 import 'package:lovesync_mobile/features/message/domain/entities/chat_message.dart';
 
 void main() {
+  test('parses encrypted message envelope', () {
+    final message = ChatMessageModel.fromJson({
+      '_id': 'timeline-3',
+      'sender': 'user-1',
+      'type': 'TEXT',
+      'content': '',
+      'encryption': {
+        'algorithm': 'RSA-OAEP-256+A256GCM',
+        'ciphertext': 'cipher',
+        'iv': 'iv',
+        'authTag': 'tag',
+        'senderEncryptedKey': 'sender-key',
+        'recipientEncryptedKey': 'recipient-key',
+        'senderKeyVersion': 1,
+        'recipientKeyVersion': 2,
+      },
+      'createdAt': '2026-07-01T10:30:00.000Z',
+    });
+
+    expect(message.encryption, isNotNull);
+    expect(message.encryption!.senderKeyVersion, 1);
+    expect(message.encryption!.recipientKeyVersion, 2);
+  });
+
   test('parses cursor timeline page and call payload', () {
     final page = ChatPageModel.fromJson({
       'items': [

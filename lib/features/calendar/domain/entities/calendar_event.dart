@@ -31,3 +31,25 @@ class CalendarEvent {
   final int reminderMinutesBefore;
   final DateTime? nextReminderAt;
 }
+
+class CalendarEventInput {
+  const CalendarEventInput({
+    required this.type,
+    required this.title,
+    required this.startsAt,
+    required this.recurrence,
+    required this.reminderEnabled,
+    required this.reminderMinutesBefore,
+    this.description = '',
+    this.location,
+  });
+
+  final CalendarEventType type;
+  final String title;
+  final String description;
+  final DateTime startsAt;
+  final String? location;
+  final CalendarRecurrence recurrence;
+  final bool reminderEnabled;
+  final int reminderMinutesBefore;
+}

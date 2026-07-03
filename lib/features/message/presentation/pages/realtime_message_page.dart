@@ -4,15 +4,17 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:lovesync_mobile/app_routes.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/features/call/presentation/providers/call_provider.dart';
 import 'package:lovesync_mobile/features/couple/data/datasources/couple_remote_datasource.dart';
 import 'package:lovesync_mobile/features/couple/data/repositories/couple_repository_impl.dart';
 import 'package:lovesync_mobile/features/couple/domain/usecases/get_my_couple.dart';
-import 'package:lovesync_mobile/features/location/presentation/pages/live_location_page.dart';
-import 'package:lovesync_mobile/features/location/presentation/pages/location_preview_page.dart';
+import 'package:lovesync_mobile/features/e2ee/data/repositories/e2ee_repository_impl.dart';
+import 'package:lovesync_mobile/features/e2ee/domain/usecases/e2ee_manager.dart';
 import 'package:lovesync_mobile/features/message/data/datasources/chat_remote_datasource.dart';
 import 'package:lovesync_mobile/features/message/data/datasources/chat_socket_datasource.dart';
 import 'package:lovesync_mobile/features/message/data/models/partner_presence_model.dart';
@@ -46,6 +48,7 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
   late final GetMyCouple _getMyCouple;
   late final UploadFile _uploadFile;
   late final ChatRemoteDatasource _chatRemoteDatasource;
+  late final E2eeManager _e2eeManager;
   final ImagePicker _imagePicker = ImagePicker();
   ChatSocketDatasource? _chatSocketDatasource;
   StreamSubscription<ChatSocketEvent>? _messageSubscription;
@@ -73,6 +76,9 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
     super.initState();
 
     _chatRemoteDatasource = ChatRemoteDatasource(context.read<DioClient>().dio);
+    _e2eeManager = E2eeManager(
+      repository: E2eeRepositoryImpl.fromDio(context.read<DioClient>().dio),
+    );
     final chatRepository = ChatRepositoryImpl(_chatRemoteDatasource);
     _postSendMessage = PostSendMessage(chatRepository);
     _getRecentMessages = GetRecentMessages(chatRepository);
@@ -113,7 +119,9 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
     final datasource = ChatSocketDatasource(token: token);
     _chatSocketDatasource = datasource;
 
-    _messageSubscription = datasource.messages.listen(_handleIncomingMessage);
+    _messageSubscription = datasource.messages.listen(
+      (event) => unawaited(_handleIncomingMessage(event)),
+    );
     _connectionSubscription = datasource.connectionChanges.listen((connected) {
       if (!mounted) return;
       setState(() => _isSocketConnected = connected);
@@ -159,7 +167,9 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
 
     try {
       final page = await _getRecentMessages(_currentUserId);
-      final sortedMessages = List<ChatMessage>.from(page.items.reversed);
+      final sortedMessages = await Future.wait(
+        page.items.reversed.map(_decryptMessageIfNeeded),
+      );
       if (!mounted) return;
 
       setState(() {
@@ -188,6 +198,21 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
     }
   }
 
+  Future<ChatMessage> _decryptMessageIfNeeded(ChatMessage message) async {
+    if (message.encryption == null || _currentUserId.isEmpty) {
+      return message;
+    }
+    final decryptedText = await _e2eeManager.tryDecryptText(
+      userId: _currentUserId,
+      isMine: message.isMine,
+      encryption: message.encryption,
+    );
+    if (decryptedText == null || decryptedText.isEmpty) {
+      return message;
+    }
+    return message.copyWith(text: decryptedText);
+  }
+
   void _handleScroll() {
     if (!_scrollController.hasClients ||
         _scrollController.position.pixels > 120) {
@@ -214,12 +239,14 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
 
     try {
       final page = await _getRecentMessages(_currentUserId, cursor: cursor);
-      final olderMessages = page.items.reversed
-          .where(
-            (message) =>
-                message.id == null || !_messageIds.contains(message.id),
-          )
-          .toList();
+      final olderMessages = await Future.wait(
+        page.items.reversed
+            .where(
+              (message) =>
+                  message.id == null || !_messageIds.contains(message.id),
+            )
+            .map(_decryptMessageIfNeeded),
+      );
       if (!mounted) return;
 
       setState(() {
@@ -321,8 +348,14 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
           ? <String>[]
           : await Future.wait(attachments.map(_uploadFile.call));
 
+      final encryption = await _e2eeManager.tryEncryptText(
+        userId: _currentUserId,
+        plaintext: text,
+      );
+
       await _postSendMessage(
-        message: text.isEmpty ? null : text,
+        message: encryption == null && text.isNotEmpty ? text : null,
+        encryption: encryption,
         attachments: uploadedUrls,
       );
 
@@ -428,9 +461,7 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
 
     if (!mounted || action == null) return;
     if (action == _LocationAction.snapshot) {
-      final sent = await Navigator.of(context).push<bool>(
-        MaterialPageRoute(builder: (_) => const LocationPreviewPage()),
-      );
+      final sent = await context.push<bool>(AppRoutes.locationPreview);
       if (sent == true && mounted) {
         await _loadRecentMessages();
       }
@@ -440,9 +471,7 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
   }
 
   Future<void> _openLiveLocation() {
-    return Navigator.of(
-      context,
-    ).push<void>(MaterialPageRoute(builder: (_) => const LiveLocationPage()));
+    return context.push<void>(AppRoutes.locationLive);
   }
 
   void _removeAttachment(File attachment) {
@@ -450,17 +479,20 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
     setState(() => _selectedAttachments.remove(attachment));
   }
 
-  void _handleIncomingMessage(ChatSocketEvent event) {
+  Future<void> _handleIncomingMessage(ChatSocketEvent event) async {
     final message = event.message;
     final hasMessageBody =
         message.text.isNotEmpty ||
+        message.encryption != null ||
         message.attachments.isNotEmpty ||
         message.type == ChatMessageType.call ||
         message.type == ChatMessageType.location;
     if (!hasMessageBody) return;
 
     final isMine = message.senderId == _currentUserId;
-    final entity = message.toEntity(isMine: isMine);
+    final entity = await _decryptMessageIfNeeded(
+      message.toEntity(isMine: isMine),
+    );
     final messageId = message.id;
     final existingIndex = messageId == null
         ? -1
@@ -474,9 +506,9 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
 
     if (isMine &&
         message.attachments.isEmpty &&
-        _isEchoFromRecentSend(message.text)) {
+        _isEchoFromRecentSend(entity.text)) {
       final optimisticIndex = _messages.lastIndexWhere(
-        (item) => item.id == null && item.isMine && item.text == message.text,
+        (item) => item.id == null && item.isMine && item.text == entity.text,
       );
       if (optimisticIndex >= 0) {
         setState(() {
