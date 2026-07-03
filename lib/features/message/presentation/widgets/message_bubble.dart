@@ -243,7 +243,7 @@ class _LocationTimelineCard extends StatelessWidget {
             ? null
             : () {
                 context.push(
-                  AppRoutes.locationSnapshot,
+                  AppRoutePaths.locationSnapshotViewer,
                   extra: LocationSnapshotRouteExtra(
                     latitude: latitude,
                     longitude: longitude,
@@ -461,6 +461,6 @@ class _AttachmentPreview extends StatelessWidget {
   }
 
   void _openVideoViewer(BuildContext context) {
-    context.push(AppRoutes.messageVideoViewer, extra: {'url': url});
+    context.push(AppRoutePaths.chatVideoViewer, extra: {'url': url});
   }
 }

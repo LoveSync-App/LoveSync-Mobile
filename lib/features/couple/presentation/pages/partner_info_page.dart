@@ -430,7 +430,7 @@ class _PartnerInfoPageState extends State<PartnerInfoPage>
                                     content: Text("Đã gửi yêu cầu kết nối!"),
                                   ),
                                 );
-                                context.go(AppRoutes.coupleCode);
+                                context.go(AppRoutePaths.coupleCode);
                               }
                             } on DioException catch (e) {
                               if (mounted) {

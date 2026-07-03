@@ -107,7 +107,7 @@ class _MemoryListPageState extends State<MemoryListPage> {
   }
 
   Future<void> _openShareMemory() async {
-    final created = await context.push<bool>(AppRoutes.memoryCreate);
+    final created = await context.push<bool>(AppRoutePaths.memoryCreate);
     if (created == true && mounted) {
       await _fetchMemories(showLoading: false);
     }

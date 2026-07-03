@@ -18,183 +18,265 @@ import 'package:lovesync_mobile/features/memory/presentation/pages/memory_list_p
 import 'package:lovesync_mobile/features/message/presentation/pages/network_video_viewer_page.dart';
 import 'package:lovesync_mobile/features/message/presentation/pages/realtime_message_page.dart';
 import 'package:lovesync_mobile/features/user/presentation/pages/profile_page.dart';
-import 'package:lovesync_mobile/shared/widgets/couple_shell_scaffold.dart';
 import 'package:lovesync_mobile/providers/auth_provider.dart';
+import 'package:lovesync_mobile/shared/widgets/couple_shell_scaffold.dart';
 
 class AppRouter {
-  late final AuthProvider _authProvider;
   AppRouter(this._authProvider);
+
+  final AuthProvider _authProvider;
 
   GoRouter get router => GoRouter(
     refreshListenable: _authProvider,
-    // initialLocation: '/couple/partner-info',
-    initialLocation: AppRoutes.login,
-    // initialLocation: '/couple/code',
+    initialLocation: AppRoutePaths.authLogin,
     routes: [
-      GoRoute(
-        path: AppRoutes.loading,
-        builder: (context, state) => const Scaffold(
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 20),
-                Text('Đang Tải...'),
-              ],
-            ),
-          ),
+      ..._legacyRedirectRoutes,
+      _loadingRoute,
+      ..._authRoutes,
+      ..._coupleRoutes,
+      ..._memoryRoutes,
+      ..._chatRoutes,
+      ..._locationRoutes,
+      _mainShellRoute,
+    ],
+    redirect: _guardByAuthState,
+  );
+
+  GoRoute get _loadingRoute => GoRoute(
+    path: AppRoutePaths.loading,
+    builder: (context, state) => const Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 20),
+            Text('Đang tải...'),
+          ],
         ),
       ),
-      GoRoute(
-        path: AppRoutes.coupleScan,
-        builder: (context, state) => const CoupleScanPage(),
-      ),
-      GoRoute(
-        path: AppRoutes.couplePartnerInfo,
-        builder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>;
-          return PartnerInfoPage(
-            partnerCode: extra['partnerCode'] as String,
-            partnerName: extra['partnerName'] as String,
-            partnerAvatarUrl: extra['partnerAvatarUrl'] as String,
-            userFullName: extra['userFullName'] as String,
-            userAvatarUrl: extra['userAvatarUrl'] as String,
-          );
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.coupleConfirmation,
-        builder: (context, state) => const CoupleConfirmationPage(),
-      ),
-      GoRoute(
-        path: AppRoutes.memoryCreate,
-        builder: (context, state) => const MemoryCapturePage(),
-      ),
-      GoRoute(path: AppRoutes.login, builder: (context, state) => LoginPage()),
-      GoRoute(
-        path: AppRoutes.register,
-        builder: (context, state) => const RegisterPage(),
-      ),
-      GoRoute(
-        path: AppRoutes.forgotPassword,
-        builder: (context, state) => const ForgotPasswordPage(),
-      ),
-      GoRoute(
-        path: AppRoutes.message,
-        builder: (context, state) => const RealtimeMessagePage(),
-      ),
-      GoRoute(
-        path: AppRoutes.locationPreview,
-        builder: (context, state) => const LocationPreviewPage(),
-      ),
-      GoRoute(
-        path: AppRoutes.locationLive,
-        builder: (context, state) => const LiveLocationPage(),
-      ),
-      GoRoute(
-        path: AppRoutes.locationSnapshot,
-        builder: (context, state) {
-          final extra = state.extra;
-          if (extra is! LocationSnapshotRouteExtra) {
-            return const Scaffold(
-              body: Center(child: Text('Thiếu dữ liệu vị trí')),
-            );
-          }
-          return LocationSnapshotPage(
-            latitude: extra.latitude,
-            longitude: extra.longitude,
-            address: extra.address,
-            label: extra.label,
-          );
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.messageVideoViewer,
-        builder: (context, state) {
-          final extra = state.extra;
-          final url = extra is Map ? extra['url']?.toString() : null;
-          if (url == null || url.isEmpty) {
-            return const Scaffold(
-              body: Center(child: Text('Thiếu đường dẫn video')),
-            );
-          }
-          return NetworkVideoViewerPage(url: url);
-        },
-      ),
-      StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) =>
-            CoupleShellScaffold(navigationShell: navigationShell),
-        branches: [
-          StatefulShellBranch(
+    ),
+  );
+
+  List<GoRoute> get _authRoutes => [
+    GoRoute(
+      path: AppRoutePaths.authLogin,
+      builder: (context, state) => LoginPage(),
+    ),
+    GoRoute(
+      path: AppRoutePaths.authRegister,
+      builder: (context, state) => const RegisterPage(),
+    ),
+    GoRoute(
+      path: AppRoutePaths.authForgotPassword,
+      builder: (context, state) => const ForgotPasswordPage(),
+    ),
+  ];
+
+  List<GoRoute> get _coupleRoutes => [
+    GoRoute(
+      path: AppRoutePaths.coupleScan,
+      builder: (context, state) => const CoupleScanPage(),
+    ),
+    GoRoute(
+      path: AppRoutePaths.couplePartnerInfo,
+      builder: (context, state) => _buildPartnerInfoPage(state),
+    ),
+    GoRoute(
+      path: AppRoutePaths.coupleInvitations,
+      builder: (context, state) => const CoupleConfirmationPage(),
+    ),
+  ];
+
+  List<GoRoute> get _memoryRoutes => [
+    GoRoute(
+      path: AppRoutePaths.memoryCreate,
+      builder: (context, state) => const MemoryCapturePage(),
+    ),
+  ];
+
+  List<GoRoute> get _chatRoutes => [
+    GoRoute(
+      path: AppRoutePaths.chat,
+      builder: (context, state) => const RealtimeMessagePage(),
+    ),
+    GoRoute(
+      path: AppRoutePaths.chatVideoViewer,
+      builder: (context, state) => _buildChatVideoViewerPage(state),
+    ),
+  ];
+
+  List<GoRoute> get _locationRoutes => [
+    GoRoute(
+      path: AppRoutePaths.locationSnapshotPreview,
+      builder: (context, state) => const LocationPreviewPage(),
+    ),
+    GoRoute(
+      path: AppRoutePaths.locationLiveMap,
+      builder: (context, state) => const LiveLocationPage(),
+    ),
+    GoRoute(
+      path: AppRoutePaths.locationSnapshotViewer,
+      builder: (context, state) => _buildLocationSnapshotPage(state),
+    ),
+  ];
+
+  StatefulShellRoute get _mainShellRoute => StatefulShellRoute.indexedStack(
+    builder: (context, state, navigationShell) =>
+        CoupleShellScaffold(navigationShell: navigationShell),
+    branches: [
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: AppRoutePaths.coupleHome,
+            builder: (context, state) => const CoupleDaysPage(),
             routes: [
               GoRoute(
-                path: AppRoutes.couple,
-                builder: (context, state) => const CoupleDaysPage(),
-                routes: [
-                  GoRoute(
-                    path: 'code',
-                    builder: (context, state) => const CoupleCodePage(),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.memories,
-                builder: (context, state) => MemoryListPage(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.anniversaries,
-                builder: (context, state) => const CalendarPage(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.settings,
-                builder: (context, state) => const ProfilePage(),
+                path: 'code',
+                builder: (context, state) => const CoupleCodePage(),
               ),
             ],
           ),
         ],
       ),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: AppRoutePaths.memoryList,
+            builder: (context, state) => MemoryListPage(),
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: AppRoutePaths.calendar,
+            builder: (context, state) => const CalendarPage(),
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: AppRoutePaths.profile,
+            builder: (context, state) => const ProfilePage(),
+          ),
+        ],
+      ),
     ],
-    redirect: (context, state) {
-      final accessToken = _authProvider.accessToken;
-      final isLoadingInit = _authProvider.isLoadingInit;
-
-      final location = state.matchedLocation;
-
-      final isAuthPage =
-          location == AppRoutes.login ||
-          location == AppRoutes.register ||
-          location == AppRoutes.forgotPassword;
-
-      if (isLoadingInit) {
-        return location == AppRoutes.loading ? null : AppRoutes.loading;
-      }
-
-      if (location == AppRoutes.loading) {
-        return accessToken.isNotEmpty ? AppRoutes.couple : AppRoutes.login;
-      }
-
-      if (accessToken.isEmpty && !isAuthPage) {
-        return AppRoutes.login;
-      }
-
-      if (accessToken.isNotEmpty && isAuthPage) {
-        return AppRoutes.couple;
-      }
-
-      return null;
-    },
   );
+
+  List<GoRoute> get _legacyRedirectRoutes => [
+    _redirect(LegacyAppRoutePaths.login, AppRoutePaths.authLogin),
+    _redirect(LegacyAppRoutePaths.register, AppRoutePaths.authRegister),
+    _redirect(
+      LegacyAppRoutePaths.forgotPassword,
+      AppRoutePaths.authForgotPassword,
+    ),
+    _redirect(
+      LegacyAppRoutePaths.coupleConfirmation,
+      AppRoutePaths.coupleInvitations,
+    ),
+    _redirect(LegacyAppRoutePaths.memoryCreate, AppRoutePaths.memoryCreate),
+    _redirect(LegacyAppRoutePaths.anniversaries, AppRoutePaths.calendar),
+    _redirect(LegacyAppRoutePaths.settings, AppRoutePaths.profile),
+    _redirect(LegacyAppRoutePaths.message, AppRoutePaths.chat),
+    _redirect(
+      LegacyAppRoutePaths.locationPreview,
+      AppRoutePaths.locationSnapshotPreview,
+    ),
+    _redirect(LegacyAppRoutePaths.locationLive, AppRoutePaths.locationLiveMap),
+    _redirect(
+      LegacyAppRoutePaths.locationSnapshot,
+      AppRoutePaths.locationSnapshotViewer,
+    ),
+    _redirect(
+      LegacyAppRoutePaths.messageVideoViewer,
+      AppRoutePaths.chatVideoViewer,
+    ),
+  ];
+
+  GoRoute _redirect(String legacyPath, String targetPath) {
+    return GoRoute(path: legacyPath, redirect: (context, state) => targetPath);
+  }
+
+  String? _guardByAuthState(BuildContext context, GoRouterState state) {
+    final accessToken = _authProvider.accessToken;
+    final isLoadingInit = _authProvider.isLoadingInit;
+    final location = state.matchedLocation;
+    final isAuthPage = _authPaths.contains(location);
+
+    if (isLoadingInit) {
+      return location == AppRoutePaths.loading ? null : AppRoutePaths.loading;
+    }
+
+    if (location == AppRoutePaths.loading) {
+      return accessToken.isNotEmpty
+          ? AppRoutePaths.coupleHome
+          : AppRoutePaths.authLogin;
+    }
+
+    if (accessToken.isEmpty && !isAuthPage) {
+      return AppRoutePaths.authLogin;
+    }
+
+    if (accessToken.isNotEmpty && isAuthPage) {
+      return AppRoutePaths.coupleHome;
+    }
+
+    return null;
+  }
+
+  Set<String> get _authPaths => {
+    AppRoutePaths.authLogin,
+    AppRoutePaths.authRegister,
+    AppRoutePaths.authForgotPassword,
+  };
+
+  Widget _buildPartnerInfoPage(GoRouterState state) {
+    final extra = state.extra;
+    if (extra is! Map<String, dynamic>) {
+      return const _MissingRouteExtraPage(message: 'Thiếu dữ liệu ghép đôi');
+    }
+    return PartnerInfoPage(
+      partnerCode: extra['partnerCode'] as String,
+      partnerName: extra['partnerName'] as String,
+      partnerAvatarUrl: extra['partnerAvatarUrl'] as String,
+      userFullName: extra['userFullName'] as String,
+      userAvatarUrl: extra['userAvatarUrl'] as String,
+    );
+  }
+
+  Widget _buildLocationSnapshotPage(GoRouterState state) {
+    final extra = state.extra;
+    if (extra is! LocationSnapshotRouteExtra) {
+      return const _MissingRouteExtraPage(message: 'Thiếu dữ liệu vị trí');
+    }
+    return LocationSnapshotPage(
+      latitude: extra.latitude,
+      longitude: extra.longitude,
+      address: extra.address,
+      label: extra.label,
+    );
+  }
+
+  Widget _buildChatVideoViewerPage(GoRouterState state) {
+    final extra = state.extra;
+    final url = extra is Map ? extra['url']?.toString() : null;
+    if (url == null || url.isEmpty) {
+      return const _MissingRouteExtraPage(message: 'Thiếu đường dẫn video');
+    }
+    return NetworkVideoViewerPage(url: url);
+  }
+}
+
+class _MissingRouteExtraPage extends StatelessWidget {
+  const _MissingRouteExtraPage({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(body: Center(child: Text(message)));
+  }
 }

@@ -78,7 +78,7 @@ class _CoupleScanPageState extends State<CoupleScanPage>
 
       if (mounted) {
         context.push(
-          AppRoutes.couplePartnerInfo,
+          AppRoutePaths.couplePartnerInfo,
           extra: {
             'partnerCode': code,
             'partnerName': partner.name,

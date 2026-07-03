@@ -461,7 +461,9 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
 
     if (!mounted || action == null) return;
     if (action == _LocationAction.snapshot) {
-      final sent = await context.push<bool>(AppRoutes.locationPreview);
+      final sent = await context.push<bool>(
+        AppRoutePaths.locationSnapshotPreview,
+      );
       if (sent == true && mounted) {
         await _loadRecentMessages();
       }
@@ -471,7 +473,7 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
   }
 
   Future<void> _openLiveLocation() {
-    return context.push<void>(AppRoutes.locationLive);
+    return context.push<void>(AppRoutePaths.locationLiveMap);
   }
 
   void _removeAttachment(File attachment) {

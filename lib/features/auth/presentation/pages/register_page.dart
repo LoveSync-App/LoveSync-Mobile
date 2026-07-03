@@ -100,7 +100,7 @@ class _RegisterPageState extends State<RegisterPage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Đăng ký thành công')));
-        context.go(AppRoutes.couple);
+        context.go(AppRoutePaths.coupleHome);
       }
     } on DioException catch (e) {
       if (e.response?.statusCode == 409) {

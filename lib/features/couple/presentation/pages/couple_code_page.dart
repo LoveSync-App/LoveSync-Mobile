@@ -52,7 +52,7 @@ class _CoupleCodePageState extends State<CoupleCodePage> {
   }
 
   void _onClickScan(BuildContext context) {
-    context.push(AppRoutes.coupleScan);
+    context.push(AppRoutePaths.coupleScan);
   }
 
   @override

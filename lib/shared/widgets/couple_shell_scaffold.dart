@@ -75,7 +75,7 @@ class _CoupleShellScaffoldState extends State<CoupleShellScaffold> {
           if (isCouple)
             IconButton(
               onPressed: () {
-                context.push(AppRoutes.message);
+                context.push(AppRoutePaths.chat);
               },
               icon: const Icon(
                 Icons.message_outlined,
@@ -84,7 +84,7 @@ class _CoupleShellScaffoldState extends State<CoupleShellScaffold> {
             )
           else
             IconButton(
-              onPressed: () => {context.push(AppRoutes.coupleConfirmation)},
+              onPressed: () => {context.push(AppRoutePaths.coupleInvitations)},
               icon: Icon(
                 Icons.notifications_none,
                 color: const Color(0xFF1A1C1D),
@@ -135,7 +135,7 @@ class _CoupleShellScaffoldState extends State<CoupleShellScaffold> {
     int routerIndex = uiIndex;
     if (!isCouple) {
       if (uiIndex == 1) {
-        routerIndex = RouterIndex.settings;
+        routerIndex = RouterIndex.profile;
       }
     } else {
       routerIndex = uiIndex;
@@ -150,7 +150,7 @@ class _CoupleShellScaffoldState extends State<CoupleShellScaffold> {
   int _getSelectedIndex() {
     final int currentRouterIndex = widget.navigationShell.currentIndex;
 
-    if (!isCouple && currentRouterIndex == RouterIndex.settings) {
+    if (!isCouple && currentRouterIndex == RouterIndex.profile) {
       return 1;
     }
     return currentRouterIndex;
@@ -160,6 +160,6 @@ class _CoupleShellScaffoldState extends State<CoupleShellScaffold> {
 class RouterIndex {
   static const int home = 0;
   static const int memories = 1;
-  static const int dates = 2;
-  static const int settings = 3;
+  static const int calendar = 2;
+  static const int profile = 3;
 }

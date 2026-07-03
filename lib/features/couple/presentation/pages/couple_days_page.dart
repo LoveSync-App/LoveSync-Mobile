@@ -55,9 +55,9 @@ class _CoupleDaysPageState extends State<CoupleDaysPage>
       await _fetchCoupleDays();
       if (mounted) setState(() => isLoading = false);
     } on DioException {
-      if (mounted) context.go(AppRoutes.coupleCode);
+      if (mounted) context.go(AppRoutePaths.coupleCode);
     } catch (_) {
-      if (mounted) context.go(AppRoutes.coupleCode);
+      if (mounted) context.go(AppRoutePaths.coupleCode);
     }
   }
 

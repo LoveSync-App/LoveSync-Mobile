@@ -204,7 +204,7 @@ class _coupleConfirmationPageState extends State<CoupleConfirmationPage> {
                         invitation.invitationId,
                       );
                       if (mounted) {
-                        context.go(AppRoutes.couple);
+                        context.go(AppRoutePaths.coupleHome);
                       }
                     } on DioException catch (e) {
                       if (e.response?.statusCode == 400) {

@@ -168,7 +168,7 @@ class _LoginPageState extends State<LoginPage> {
     }
     if (!mounted) return;
     _showMessage('Đăng nhập thành công!');
-    context.go(AppRoutes.couple);
+    context.go(AppRoutePaths.coupleHome);
   }
 
   Future<bool> _ensureE2eeReady(LoginResponse response) async {
@@ -361,7 +361,7 @@ class _LoginPageState extends State<LoginPage> {
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () {
-                        context.push(AppRoutes.forgotPassword);
+                        context.push(AppRoutePaths.authForgotPassword);
                       },
 
                       child: const Text("Quên mật khẩu?"),
@@ -454,7 +454,7 @@ class _LoginPageState extends State<LoginPage> {
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                               onPressed: () {
-                                context.push(AppRoutes.register);
+                                context.push(AppRoutePaths.authRegister);
                               },
                               child: const Text("Đăng ký ngay"),
                             ),
