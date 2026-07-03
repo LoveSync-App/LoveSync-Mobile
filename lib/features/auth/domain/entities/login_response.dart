@@ -1,5 +1,6 @@
 class LoginResponse {
   final String accessToken;
+  final String refreshToken;
 
   final String id;
   final String email;
@@ -12,6 +13,7 @@ class LoginResponse {
     required this.email,
     required this.name,
     required this.accessToken,
+    required this.refreshToken,
     required this.avatar,
     required this.e2eeSetupRequired,
   });

@@ -14,9 +14,11 @@ void main() {
       },
       'loginProvider': 'google.com',
       'accessToken': 'application-jwt',
+      'refreshToken': 'refresh-jwt',
     });
 
     expect(response.accessToken, 'application-jwt');
+    expect(response.refreshToken, 'refresh-jwt');
     expect(response.user.id, 'user-id');
     expect(response.user.email, 'user@example.com');
     expect(response.user.name, 'Love Sync');

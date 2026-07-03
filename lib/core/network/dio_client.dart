@@ -6,9 +6,15 @@ class DioClient {
   final Dio dio;
   final SharedPreferencesAuthStorage authStorage;
   final Future<void> Function()? onUnauthorized;
+  final Future<void> Function({
+    required String accessToken,
+    required String refreshToken,
+  })?
+  onTokenRefreshed;
   bool _isHandlingUnauthorized = false;
+  Future<_TokenPair?>? _refreshTokenFuture;
 
-  DioClient(this.authStorage, {this.onUnauthorized})
+  DioClient(this.authStorage, {this.onUnauthorized, this.onTokenRefreshed})
     : dio = Dio(
         BaseOptions(
           baseUrl: ApiConstants.baseUrl,
@@ -33,21 +39,39 @@ class DioClient {
         },
         onError: (error, handler) async {
           final isUnauthorized = error.response?.statusCode == 401;
+          final isRefreshRequest = _isRefreshPath(error.requestOptions.path);
           final isAuthRequest = _isAuthPath(error.requestOptions.path);
+          final shouldTryRefresh =
+              isUnauthorized &&
+              !isAuthRequest &&
+              !isRefreshRequest &&
+              error.requestOptions.extra['retriedAfterRefresh'] != true;
 
-          if (isUnauthorized && !isAuthRequest && !_isHandlingUnauthorized) {
-            _isHandlingUnauthorized = true;
+          if (shouldTryRefresh) {
+            _TokenPair? tokenPair;
             try {
-              final callback = onUnauthorized;
-              if (callback != null) {
-                await callback();
-              } else {
-                await authStorage.deleteAccessToken();
-                await authStorage.deleteUserId();
-              }
-            } finally {
-              _isHandlingUnauthorized = false;
+              tokenPair = await _refreshToken();
+            } on DioException {
+              tokenPair = null;
             }
+            if (tokenPair != null) {
+              final requestOptions = error.requestOptions;
+              requestOptions.extra['retriedAfterRefresh'] = true;
+              requestOptions.headers['Authorization'] =
+                  'Bearer ${tokenPair.accessToken}';
+              try {
+                final response = await dio.fetch<dynamic>(requestOptions);
+                return handler.resolve(response);
+              } on DioException catch (retryError) {
+                if (retryError.response?.statusCode != 401) {
+                  return handler.next(retryError);
+                }
+              }
+            }
+          }
+
+          if (isUnauthorized && !isAuthRequest) {
+            await _handleUnauthorizedOnce();
           }
 
           return handler.next(error);
@@ -56,10 +80,92 @@ class DioClient {
     );
   }
 
+  Future<_TokenPair?> _refreshToken() async {
+    final activeRefresh = _refreshTokenFuture;
+    if (activeRefresh != null) return activeRefresh;
+
+    final future = _requestNewTokenPair();
+    _refreshTokenFuture = future;
+    try {
+      return await future;
+    } finally {
+      _refreshTokenFuture = null;
+    }
+  }
+
+  Future<_TokenPair?> _requestNewTokenPair() async {
+    final refreshToken = await authStorage.readRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) {
+      return null;
+    }
+
+    try {
+      final response = await dio.post<dynamic>(
+        '/auth/refresh',
+        data: {'refreshToken': refreshToken},
+      );
+      final root = response.data;
+      final data = root is Map ? root['data'] : null;
+      if (data is! Map) return null;
+
+      final nextAccessToken = data['accessToken']?.toString() ?? '';
+      final nextRefreshToken = data['refreshToken']?.toString() ?? '';
+      if (nextAccessToken.isEmpty || nextRefreshToken.isEmpty) {
+        return null;
+      }
+
+      await authStorage.saveAccessToken(nextAccessToken);
+      await authStorage.saveRefreshToken(nextRefreshToken);
+      await onTokenRefreshed?.call(
+        accessToken: nextAccessToken,
+        refreshToken: nextRefreshToken,
+      );
+
+      return _TokenPair(
+        accessToken: nextAccessToken,
+        refreshToken: nextRefreshToken,
+      );
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 401) {
+        return null;
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> _handleUnauthorizedOnce() async {
+    if (_isHandlingUnauthorized) return;
+    _isHandlingUnauthorized = true;
+    try {
+      final callback = onUnauthorized;
+      if (callback != null) {
+        await callback();
+      } else {
+        await authStorage.deleteAccessToken();
+        await authStorage.deleteRefreshToken();
+        await authStorage.deleteUserId();
+      }
+    } finally {
+      _isHandlingUnauthorized = false;
+    }
+  }
+
   static bool _isAuthPath(String path) {
     return path == '/auth/login' ||
         path == '/auth/google' ||
         path == '/auth/register' ||
+        path == '/auth/refresh' ||
         path == '/auth/forgot-password';
   }
+
+  static bool _isRefreshPath(String path) {
+    return path == '/auth/refresh';
+  }
+}
+
+class _TokenPair {
+  const _TokenPair({required this.accessToken, required this.refreshToken});
+
+  final String accessToken;
+  final String refreshToken;
 }

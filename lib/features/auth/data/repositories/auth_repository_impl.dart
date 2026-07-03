@@ -16,6 +16,7 @@ class AuthRepositoryImpl extends AuthRepository {
       email: loginResponseModel.user.email,
       avatar: loginResponseModel.user.avatar,
       accessToken: loginResponseModel.accessToken,
+      refreshToken: loginResponseModel.refreshToken,
       e2eeSetupRequired: loginResponseModel.user.e2eeSetupRequired,
     );
   }
@@ -37,6 +38,7 @@ class AuthRepositoryImpl extends AuthRepository {
       email: model.user.email,
       avatar: model.user.avatar,
       accessToken: model.accessToken,
+      refreshToken: model.refreshToken,
       e2eeSetupRequired: model.user.e2eeSetupRequired,
     );
   }

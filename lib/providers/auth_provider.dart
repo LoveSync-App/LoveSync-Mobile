@@ -8,11 +8,13 @@ class AuthProvider extends ChangeNotifier {
   AuthProvider(this._authStorage);
 
   String _accessToken = '';
+  String _refreshToken = '';
   String _userId = '';
   String? _authNotice;
   bool _isLoadingInit = true;
 
   String get accessToken => _accessToken;
+  String get refreshToken => _refreshToken;
   String get userId => _userId;
   String? get authNotice => _authNotice;
   bool get isLoadingInit => _isLoadingInit;
@@ -21,6 +23,7 @@ class AuthProvider extends ChangeNotifier {
     _isLoadingInit = true;
     notifyListeners();
     _accessToken = await _authStorage.readAccessToken() ?? '';
+    _refreshToken = await _authStorage.readRefreshToken() ?? '';
     _userId = await _authStorage.readUserId() ?? '';
     if (_userId.isEmpty && _accessToken.isNotEmpty) {
       _userId = _readUserIdFromToken(_accessToken);
@@ -33,11 +36,46 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> login(String accessToken, String userId) async {
+    return loginWithTokens(
+      accessToken: accessToken,
+      refreshToken: '',
+      userId: userId,
+    );
+  }
+
+  Future<void> loginWithTokens({
+    required String accessToken,
+    required String refreshToken,
+    required String userId,
+  }) async {
     _authNotice = null;
     _accessToken = accessToken;
+    _refreshToken = refreshToken;
     _userId = userId;
     await _authStorage.saveAccessToken(accessToken);
+    if (refreshToken.isNotEmpty) {
+      await _authStorage.saveRefreshToken(refreshToken);
+    } else {
+      await _authStorage.deleteRefreshToken();
+    }
     await _authStorage.saveUserId(userId);
+    notifyListeners();
+  }
+
+  Future<void> updateTokenPair({
+    required String accessToken,
+    required String refreshToken,
+  }) async {
+    _accessToken = accessToken;
+    _refreshToken = refreshToken;
+    if (_userId.isEmpty) {
+      _userId = _readUserIdFromToken(accessToken);
+      if (_userId.isNotEmpty) {
+        await _authStorage.saveUserId(_userId);
+      }
+    }
+    await _authStorage.saveAccessToken(accessToken);
+    await _authStorage.saveRefreshToken(refreshToken);
     notifyListeners();
   }
 
@@ -66,8 +104,10 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _clearSession() async {
     _accessToken = '';
+    _refreshToken = '';
     _userId = '';
     await _authStorage.deleteAccessToken();
+    await _authStorage.deleteRefreshToken();
     await _authStorage.deleteUserId();
     notifyListeners();
   }

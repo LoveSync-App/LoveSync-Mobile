@@ -90,7 +90,11 @@ class _RegisterPageState extends State<RegisterPage> {
       final loginResponse = await _postLogin(email, password);
       if (!mounted) return;
       final authProvider = context.read<AuthProvider>();
-      await authProvider.login(loginResponse.accessToken, loginResponse.id);
+      await authProvider.loginWithTokens(
+        accessToken: loginResponse.accessToken,
+        refreshToken: loginResponse.refreshToken,
+        userId: loginResponse.id,
+      );
       final e2eeReady = await _setupE2eeForNewAccount(loginResponse);
       if (!e2eeReady) {
         await authProvider.logout();

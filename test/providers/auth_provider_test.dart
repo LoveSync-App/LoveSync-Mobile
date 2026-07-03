@@ -13,8 +13,10 @@ void main() {
     );
 
     expect(provider.accessToken, isEmpty);
+    expect(provider.refreshToken, isEmpty);
     expect(provider.userId, isEmpty);
     expect(await storage.readAccessToken(), isNull);
+    expect(await storage.readRefreshToken(), isNull);
     expect(provider.consumeAuthNotice(), contains('thiết bị khác'));
     expect(provider.consumeAuthNotice(), isNull);
   });
@@ -22,10 +24,14 @@ void main() {
 
 class _MemoryAuthStorage implements AuthStorage {
   String? accessToken;
+  String? refreshToken;
   String? userId;
 
   @override
   Future<void> deleteAccessToken() async => accessToken = null;
+
+  @override
+  Future<void> deleteRefreshToken() async => refreshToken = null;
 
   @override
   Future<void> deleteUserId() async => userId = null;
@@ -34,10 +40,16 @@ class _MemoryAuthStorage implements AuthStorage {
   Future<String?> readAccessToken() async => accessToken;
 
   @override
+  Future<String?> readRefreshToken() async => refreshToken;
+
+  @override
   Future<String?> readUserId() async => userId;
 
   @override
   Future<void> saveAccessToken(String value) async => accessToken = value;
+
+  @override
+  Future<void> saveRefreshToken(String value) async => refreshToken = value;
 
   @override
   Future<void> saveUserId(String value) async => userId = value;

@@ -49,6 +49,7 @@ void main() async {
           create: (context) => DioClient(
             SharedPreferencesAuthStorage(),
             onUnauthorized: context.read<AuthProvider>().handleUnauthorized,
+            onTokenRefreshed: context.read<AuthProvider>().updateTokenPair,
           ),
         ),
         ChangeNotifierProxyProvider<AuthProvider, CallProvider>(

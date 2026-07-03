@@ -148,7 +148,11 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _completeLogin(LoginResponse response) async {
     final authProvider = context.read<AuthProvider>();
-    await authProvider.login(response.accessToken, response.id);
+    await authProvider.loginWithTokens(
+      accessToken: response.accessToken,
+      refreshToken: response.refreshToken,
+      userId: response.id,
+    );
     final e2eeReady = await _ensureE2eeReady(response);
     if (!e2eeReady) {
       await authProvider.logout();
