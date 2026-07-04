@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 
 import 'package:dio/dio.dart';
 import 'package:lovesync_mobile/features/e2ee/domain/entities/e2ee_key_bundle.dart';
@@ -33,8 +34,10 @@ class E2eeManager {
     required String userId,
     required String recoveryCode,
   }) async {
-    final generated = _cryptoService.generateAndProtectKeys(
-      recoveryCode: recoveryCode,
+    final generated = await Isolate.run(
+      () => E2eeCryptoService().generateAndProtectKeys(
+        recoveryCode: recoveryCode,
+      ),
     );
     final serverBundle = await _repository.setupKeys(
       publicKey: generated.publicKey,
@@ -57,9 +60,11 @@ class E2eeManager {
     if (backup == null) {
       throw StateError('Không tìm thấy gói khôi phục khóa.');
     }
-    final privateKeyJson = _cryptoService.recoverPrivateKeyJson(
-      backup: backup,
-      recoveryCode: recoveryCode,
+    final privateKeyJson = await Isolate.run(
+      () => E2eeCryptoService().recoverPrivateKeyJson(
+        backup: backup,
+        recoveryCode: recoveryCode,
+      ),
     );
     await _repository.saveLocalKeys(
       userId: userId,
