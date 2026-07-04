@@ -154,7 +154,7 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
         _partnerAvatar = couple.partnerAvatar;
         _currentUserId = couple.userId;
       });
-    } on DioException catch (_) {
+    } catch (_) {
       // Chat can still work without partner profile details.
     }
   }
@@ -186,11 +186,11 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
         _nextCursor = page.nextCursor;
       });
       _scrollToBottom();
-    } on DioException catch (_) {
+    } catch (_) {
       if (!mounted) return;
       setState(() => _isLoadingMessages = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Không tải được tin nhắn gần đây.'),
           behavior: SnackBarBehavior.floating,
         ),
@@ -331,41 +331,78 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
     final attachments = List<File>.from(_selectedAttachments);
     if ((text.isEmpty && attachments.isEmpty) || _isSending) return;
 
-    setState(() {
-      _isSending = true;
-      if (attachments.isEmpty) {
-        _messages.add(
-          ChatMessage(text: text, sentAt: DateTime.now(), isMine: true),
-        );
-        _recentlySentMessages[text] = DateTime.now();
-      }
-      _messageController.clear();
-    });
-    _scrollToBottom();
+    ChatMessage? optimisticMessage;
+    setState(() => _isSending = true);
 
     try {
       final uploadedUrls = attachments.isEmpty
           ? <String>[]
           : await Future.wait(attachments.map(_uploadFile.call));
 
-      final encryption = await _e2eeManager.tryEncryptText(
-        userId: _currentUserId,
-        plaintext: text,
-      );
+      var encryption = text.isEmpty
+          ? null
+          : await _e2eeManager.encryptText(
+              userId: _currentUserId,
+              plaintext: text,
+            );
 
-      await _postSendMessage(
-        message: encryption == null && text.isNotEmpty ? text : null,
-        encryption: encryption,
-        attachments: uploadedUrls,
-      );
+      if (attachments.isEmpty && text.isNotEmpty && mounted) {
+        optimisticMessage = ChatMessage(
+          text: text,
+          sentAt: DateTime.now(),
+          isMine: true,
+        );
+        setState(() {
+          _messages.add(optimisticMessage!);
+          _recentlySentMessages[text] = DateTime.now();
+          _messageController.clear();
+        });
+        _scrollToBottom();
+      }
+
+      try {
+        await _postSendMessage(
+          encryption: encryption,
+          attachments: uploadedUrls,
+        );
+      } on DioException catch (error) {
+        if (error.response?.statusCode == 409 && text.isNotEmpty) {
+          encryption = await _e2eeManager.encryptText(
+            userId: _currentUserId,
+            plaintext: text,
+            forceRefreshPartnerKey: true,
+          );
+          await _postSendMessage(
+            encryption: encryption,
+            attachments: uploadedUrls,
+          );
+        } else {
+          rethrow;
+        }
+      }
 
       if (mounted) {
-        setState(() => _selectedAttachments.clear());
+        setState(() {
+          _selectedAttachments.clear();
+          if (attachments.isNotEmpty) {
+            _messageController.clear();
+          }
+        });
       }
-    } on DioException catch (_) {
+    } catch (error) {
       if (!mounted) return;
+      final pendingMessage = optimisticMessage;
+      if (pendingMessage != null) {
+        setState(() {
+          _messages.remove(pendingMessage);
+          _recentlySentMessages.remove(text);
+          if (_messageController.text.trim().isEmpty) {
+            _messageController.text = text;
+          }
+        });
+      }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Không gửi được tin nhắn. Vui lòng thử lại.'),
           behavior: SnackBarBehavior.floating,
         ),

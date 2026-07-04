@@ -87,6 +87,40 @@ class E2eeManager {
     );
   }
 
+  Future<E2eeMessageEncryption> encryptText({
+    required String userId,
+    required String plaintext,
+    bool forceRefreshPartnerKey = false,
+  }) async {
+    final normalizedPlaintext = plaintext.trim();
+    if (normalizedPlaintext.isEmpty) {
+      throw ArgumentError('Nội dung tin nhắn không được để trống.');
+    }
+
+    final localKeys = await _readLocalKeys(userId);
+    if (localKeys == null) {
+      throw StateError(
+        'Thiết bị này chưa có khóa mã hóa. Vui lòng đăng nhập lại và nhập mã khôi phục.',
+      );
+    }
+
+    if (forceRefreshPartnerKey) {
+      _partnerKeyCache = null;
+    }
+    final partnerKeys = await _getPartnerKeysOrNull();
+    if (partnerKeys == null) {
+      throw StateError(
+        'Người ấy chưa thiết lập khóa mã hóa. Hãy yêu cầu người ấy đăng nhập và tạo mã khôi phục trước.',
+      );
+    }
+
+    return _cryptoService.encryptMessage(
+      plaintext: normalizedPlaintext,
+      senderKeys: localKeys,
+      partnerKeys: partnerKeys,
+    );
+  }
+
   Future<String?> tryDecryptText({
     required String userId,
     required bool isMine,
