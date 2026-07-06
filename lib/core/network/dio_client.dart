@@ -187,7 +187,8 @@ class DioClient {
         path == '/auth/google' ||
         path == '/auth/register' ||
         path == '/auth/refresh' ||
-        path == '/auth/forgot-password';
+        path == '/auth/password/forgot' ||
+        path == '/auth/password/reset';
   }
 
   static bool _isRefreshPath(String path) {

@@ -57,6 +57,59 @@ class AuthRemoteDatasource {
     await dio.post('/auth/logout');
   }
 
+  Future<int> requestPasswordResetOtp(String email) async {
+    try {
+      final response = await dio.post(
+        '/auth/password/forgot',
+        data: {'email': email},
+      );
+      final data = response.data['data'];
+      if (data is Map) {
+        return int.tryParse(data['expiresInSeconds']?.toString() ?? '') ?? 300;
+      }
+      return 300;
+    } on DioException catch (error) {
+      throw Exception(_readErrorMessage(error, 'Khong the gui ma OTP.'));
+    }
+  }
+
+  Future<void> resetPasswordWithOtp({
+    required String email,
+    required String otp,
+    required String password,
+    required String passwordConfirm,
+  }) async {
+    try {
+      await dio.post(
+        '/auth/password/reset',
+        data: {
+          'email': email,
+          'otp': otp,
+          'password': password,
+          'passwordConfirm': passwordConfirm,
+        },
+      );
+    } on DioException catch (error) {
+      throw Exception(
+        _readErrorMessage(error, 'OTP khong dung hoac da het han.'),
+      );
+    }
+  }
+
+  Future<void> addPassword({
+    required String password,
+    required String passwordConfirm,
+  }) async {
+    try {
+      await dio.post(
+        '/auth/password',
+        data: {'password': password, 'passwordConfirm': passwordConfirm},
+      );
+    } on DioException catch (error) {
+      throw Exception(_readErrorMessage(error, 'Khong the cap nhat mat khau.'));
+    }
+  }
+
   Future<RegisterResponseModel> register(
     String email,
     String password,
@@ -73,5 +126,16 @@ class AuthRemoteDatasource {
       },
     );
     return RegisterResponseModel.fromJson(response.data['data']);
+  }
+
+  String _readErrorMessage(DioException error, String fallback) {
+    final data = error.response?.data;
+    if (data is Map) {
+      final message = data['message'] ?? data['error'];
+      if (message != null && message.toString().isNotEmpty) {
+        return message.toString();
+      }
+    }
+    return fallback;
   }
 }

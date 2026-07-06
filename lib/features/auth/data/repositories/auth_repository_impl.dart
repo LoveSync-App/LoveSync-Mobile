@@ -63,4 +63,35 @@ class AuthRepositoryImpl extends AuthRepository {
       avatar: registerResponseModel.avatar,
     );
   }
+
+  @override
+  Future<int> requestPasswordResetOtp(String email) {
+    return remoteDatasource.requestPasswordResetOtp(email);
+  }
+
+  @override
+  Future<void> resetPasswordWithOtp({
+    required String email,
+    required String otp,
+    required String password,
+    required String passwordConfirm,
+  }) {
+    return remoteDatasource.resetPasswordWithOtp(
+      email: email,
+      otp: otp,
+      password: password,
+      passwordConfirm: passwordConfirm,
+    );
+  }
+
+  @override
+  Future<void> addPassword({
+    required String password,
+    required String passwordConfirm,
+  }) {
+    return remoteDatasource.addPassword(
+      password: password,
+      passwordConfirm: passwordConfirm,
+    );
+  }
 }

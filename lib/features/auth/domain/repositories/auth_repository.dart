@@ -14,4 +14,15 @@ abstract class AuthRepository {
     String passwordConfirm,
     String name,
   );
+  Future<int> requestPasswordResetOtp(String email);
+  Future<void> resetPasswordWithOtp({
+    required String email,
+    required String otp,
+    required String password,
+    required String passwordConfirm,
+  });
+  Future<void> addPassword({
+    required String password,
+    required String passwordConfirm,
+  });
 }

@@ -7,10 +7,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:lovesync_mobile/features/auth/data/datasources/google_auth_datasource.dart';
+import 'package:lovesync_mobile/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:lovesync_mobile/features/auth/domain/usecases/post_add_password.dart';
 import 'package:lovesync_mobile/features/user/data/datasources/user_remote_datasource.dart';
 import 'package:lovesync_mobile/features/user/data/repositories/user_repository_impl.dart';
 import 'package:lovesync_mobile/features/user/domain/entities/user_response.dart';
-import 'package:lovesync_mobile/features/user/domain/usecases/delete_me.dart';
 import 'package:lovesync_mobile/features/user/domain/usecases/get_user_info.dart';
 import 'package:lovesync_mobile/features/user/domain/usecases/patch_update_me.dart';
 import 'package:lovesync_mobile/providers/auth_provider.dart';
@@ -29,20 +30,23 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   late final GetUserInfo _getUserInfo;
   late final PatchUpdateMe _patchUpdateMe;
-  late final DeleteMe _deleteMe;
+  late final PostAddPassword _postAddPassword;
   late final UploadFile _uploadFile;
   late final AuthRemoteDatasource _authRemoteDatasource;
   late final GoogleAuthDatasource _googleAuthDatasource;
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   final ImagePicker _picker = ImagePicker();
 
   UserResponse? _profile;
   File? _selectedAvatar;
   bool _isLoading = true;
   bool _isSaving = false;
-  bool _isDeleting = false;
+  bool _isUpdatingPassword = false;
   bool _isPickingAvatar = false;
 
   @override
@@ -52,10 +56,12 @@ class _ProfilePageState extends State<ProfilePage> {
     final dio = context.read<DioClient>().dio;
     _authRemoteDatasource = AuthRemoteDatasource(dio);
     _googleAuthDatasource = GoogleAuthDatasource();
+    _postAddPassword = PostAddPassword(
+      AuthRepositoryImpl(AuthRemoteDatasource(dio)),
+    );
     final userRepository = UserRepositoryImpl(UserRemoteDatasource(dio));
     _getUserInfo = GetUserInfo(userRepository);
     _patchUpdateMe = PatchUpdateMe(userRepository);
-    _deleteMe = DeleteMe(userRepository);
     _uploadFile = UploadFile(UploadRepositotyImpl(UploadRemoteDatasource(dio)));
 
     _loadProfile();
@@ -65,6 +71,8 @@ class _ProfilePageState extends State<ProfilePage> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -86,7 +94,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _pickAvatar() async {
-    if (_isPickingAvatar || _isSaving || _isDeleting) return;
+    if (_isPickingAvatar || _isSaving || _isUpdatingPassword) return;
 
     setState(() => _isPickingAvatar = true);
 
@@ -152,51 +160,136 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Future<void> _confirmDeleteAccount() async {
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tắt tài khoản?'),
-        content: const Text(
-          'Tài khoản của bạn sẽ được chuyển sang trạng thái INACTIVE.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Tắt tài khoản'),
-          ),
-        ],
-      ),
-    );
+  Future<void> _showPasswordSheet() async {
+    _passwordController.clear();
+    _confirmPasswordController.clear();
+    var showPassword = false;
+    var showConfirmPassword = false;
 
-    if (shouldDelete == true) {
-      await _deleteAccount();
-    }
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                20,
+                20,
+                MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Mật khẩu',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: _passwordController,
+                    obscureText: !showPassword,
+                    decoration:
+                        _buildInputDecoration(
+                          hintText: 'Nhập mật khẩu mới',
+                          icon: Icons.lock_outlined,
+                        ).copyWith(
+                          suffixIcon: IconButton(
+                            onPressed: () => setSheetState(
+                              () => showPassword = !showPassword,
+                            ),
+                            icon: Icon(
+                              showPassword
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                            ),
+                          ),
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _confirmPasswordController,
+                    obscureText: !showConfirmPassword,
+                    decoration:
+                        _buildInputDecoration(
+                          hintText: 'Nhập lại mật khẩu mới',
+                          icon: Icons.lock_outlined,
+                        ).copyWith(
+                          suffixIcon: IconButton(
+                            onPressed: () => setSheetState(
+                              () => showConfirmPassword = !showConfirmPassword,
+                            ),
+                            icon: Icon(
+                              showConfirmPassword
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                            ),
+                          ),
+                        ),
+                  ),
+                  const SizedBox(height: 18),
+                  FilledButton.icon(
+                    onPressed: _isUpdatingPassword
+                        ? null
+                        : () => _savePassword(sheetContext),
+                    icon: _isUpdatingPassword
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.key_outlined),
+                    label: Text(
+                      _isUpdatingPassword ? 'Đang lưu...' : 'Lưu mật khẩu',
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFA03B56),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
-  Future<void> _deleteAccount() async {
-    if (_isDeleting) return;
-    setState(() => _isDeleting = true);
+  Future<void> _savePassword(BuildContext sheetContext) async {
+    final navigator = Navigator.of(sheetContext);
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
 
+    if (password.length < 6) {
+      _showSnackBar('Mật khẩu cần có ít nhất 6 ký tự.');
+      return;
+    }
+    if (password != confirmPassword) {
+      _showSnackBar('Mật khẩu xác nhận không khớp.');
+      return;
+    }
+
+    setState(() => _isUpdatingPassword = true);
     try {
-      await _deleteMe();
+      await _postAddPassword(
+        password: password,
+        passwordConfirm: confirmPassword,
+      );
       if (!mounted) return;
-      try {
-        await _googleAuthDatasource.signOut();
-      } catch (_) {
-        // The account is already deleted on the backend.
+      navigator.pop();
+      _showSnackBar('Đã cập nhật mật khẩu.');
+    } catch (error) {
+      if (mounted) {
+        _showSnackBar(error.toString().replaceFirst('Exception: ', ''));
       }
-      if (!mounted) return;
-      await context.read<AuthProvider>().logout();
-    } on DioException catch (e) {
-      if (!mounted) return;
-      _showSnackBar(e.message ?? 'Không tắt được tài khoản.');
-      setState(() => _isDeleting = false);
+    } finally {
+      if (mounted) setState(() => _isUpdatingPassword = false);
     }
   }
 
@@ -255,12 +348,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 _buildForm(),
                 const SizedBox(height: 18),
                 OutlinedButton.icon(
-                  onPressed: _isDeleting ? null : _confirmDeleteAccount,
-                  icon: const Icon(Icons.person_off_outlined),
-                  label: const Text('Tắt tài khoản'),
+                  onPressed: _isUpdatingPassword ? null : _showPasswordSheet,
+                  icon: const Icon(Icons.key_outlined),
+                  label: const Text('Đổi mật khẩu'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: const BorderSide(color: Colors.red),
+                    foregroundColor: const Color(0xFFA03B56),
+                    side: const BorderSide(color: Color(0xFFA03B56)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
@@ -281,7 +374,9 @@ class _ProfilePageState extends State<ProfilePage> {
               child: SizedBox(
                 height: 52,
                 child: FilledButton.icon(
-                  onPressed: _isSaving || _isDeleting ? null : _saveProfile,
+                  onPressed: _isSaving || _isUpdatingPassword
+                      ? null
+                      : _saveProfile,
                   icon: _isSaving
                       ? const SizedBox(
                           width: 18,
@@ -300,7 +395,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
           ),
-          if (_isDeleting)
+          if (_isUpdatingPassword)
             Container(
               color: Colors.black.withValues(alpha: 0.35),
               child: const Center(child: CircularProgressIndicator()),
@@ -370,16 +465,6 @@ class _ProfilePageState extends State<ProfilePage> {
           profile.email,
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 14, color: Color(0xFF6D7278)),
-        ),
-        const SizedBox(height: 10),
-        Chip(
-          label: Text(profile.status.isEmpty ? 'ACTIVE' : profile.status),
-          backgroundColor: const Color(0xFFFFE8EF),
-          labelStyle: const TextStyle(
-            color: Color(0xFFA03B56),
-            fontWeight: FontWeight.w700,
-          ),
-          side: BorderSide.none,
         ),
       ],
     );
