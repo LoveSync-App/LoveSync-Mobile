@@ -333,7 +333,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF7F9),
+      backgroundColor: const Color(0xFFFFFAFC),
       body: Stack(
         children: [
           SingleChildScrollView(
@@ -341,28 +341,29 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildAvatar(profile),
-                const SizedBox(height: 20),
-                _buildProfileSummary(profile),
+                _buildProfileHero(profile),
                 const SizedBox(height: 18),
-                _buildForm(),
+                _buildInfoPanel(),
                 const SizedBox(height: 18),
-                OutlinedButton.icon(
-                  onPressed: _isUpdatingPassword ? null : _showPasswordSheet,
-                  icon: const Icon(Icons.key_outlined),
-                  label: const Text('Đổi mật khẩu'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFA03B56),
-                    side: const BorderSide(color: Color(0xFFA03B56)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                _buildActionPanel(),
+                if (false) ...[
+                  OutlinedButton.icon(
+                    onPressed: _isUpdatingPassword ? null : _showPasswordSheet,
+                    icon: const Icon(Icons.key_outlined),
+                    label: const Text('Đổi mật khẩu'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFA03B56),
+                      side: const BorderSide(color: Color(0xFFA03B56)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                TextButton.icon(
-                  onPressed: _logout,
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Đăng xuất'),
-                ),
+                  const SizedBox(height: 10),
+                  TextButton.icon(
+                    onPressed: _logout,
+                    icon: const Icon(Icons.logout),
+                    label: const Text('Đăng xuất'),
+                  ),
+                ],
               ],
             ),
           ),
@@ -405,6 +406,10 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Widget _buildProfileHero(UserResponse profile) {
+    return Center(child: _buildAvatar(profile));
+  }
+
   Widget _buildAvatar(UserResponse profile) {
     return Center(
       child: Stack(
@@ -427,14 +432,14 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
           Positioned(
-            right: -2,
+            right: -4,
             bottom: 2,
             child: IconButton.filled(
               onPressed: _isPickingAvatar ? null : _pickAvatar,
               icon: _isPickingAvatar
                   ? const SizedBox(
-                      width: 18,
-                      height: 18,
+                      width: 16,
+                      height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         color: Colors.white,
@@ -444,6 +449,10 @@ class _ProfilePageState extends State<ProfilePage> {
               style: IconButton.styleFrom(
                 backgroundColor: const Color(0xFFA03B56),
                 foregroundColor: Colors.white,
+                minimumSize: const Size(36, 36),
+                fixedSize: const Size(36, 36),
+                padding: EdgeInsets.zero,
+                side: const BorderSide(color: Colors.white, width: 2),
               ),
             ),
           ),
@@ -452,47 +461,100 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildProfileSummary(UserResponse profile) {
-    return Column(
-      children: [
-        Text(
-          profile.name,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+  Widget _buildInfoPanel() {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF2DCE3)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Thông tin cá nhân',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 16),
+            _buildInputLabel('Tên hiển thị'),
+            TextField(
+              controller: _nameController,
+              decoration: _buildInputDecoration(
+                hintText: 'Nhập tên của bạn',
+                icon: Icons.person_outline,
+              ),
+            ),
+            const SizedBox(height: 14),
+            _buildInputLabel('Số điện thoại'),
+            TextField(
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              decoration: _buildInputDecoration(
+                hintText: 'Nhập số điện thoại',
+                icon: Icons.phone_outlined,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 4),
-        Text(
-          profile.email,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 14, color: Color(0xFF6D7278)),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildInputLabel('Tên hiển thị'),
-        TextField(
-          controller: _nameController,
-          decoration: _buildInputDecoration(
-            hintText: 'Nhập tên của bạn',
-            icon: Icons.person_outline,
+  Widget _buildActionPanel() {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF2DCE3)),
+      ),
+      child: Column(
+        children: [
+          _buildActionTile(
+            icon: Icons.key_outlined,
+            title: 'Đổi mật khẩu',
+            subtitle: 'Cập nhật mật khẩu đăng nhập',
+            onTap: _isUpdatingPassword ? null : _showPasswordSheet,
           ),
-        ),
-        const SizedBox(height: 14),
-        _buildInputLabel('Số điện thoại'),
-        TextField(
-          controller: _phoneController,
-          keyboardType: TextInputType.phone,
-          decoration: _buildInputDecoration(
-            hintText: 'Nhập số điện thoại',
-            icon: Icons.phone_outlined,
+          const Divider(height: 1, color: Color(0xFFF4E3E8)),
+          _buildActionTile(
+            icon: Icons.logout,
+            title: 'Đăng xuất',
+            subtitle: 'Rời khỏi tài khoản trên thiết bị này',
+            onTap: _logout,
+            destructive: true,
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback? onTap,
+    bool destructive = false,
+  }) {
+    final color = destructive
+        ? const Color(0xFFC2414B)
+        : const Color(0xFFA03B56);
+    return ListTile(
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      leading: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
         ),
-      ],
+        child: Icon(icon, color: color),
+      ),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+      subtitle: Text(subtitle),
+      trailing: Icon(Icons.chevron_right, color: color),
     );
   }
 
