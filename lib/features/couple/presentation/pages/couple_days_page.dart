@@ -35,11 +35,13 @@ class _CoupleDaysPageState extends State<CoupleDaysPage>
   String partnerName = "";
   String partnerAvatar = "https://i.pravatar.cc/150?img=3";
 
-  void _fetchCouple() async {
+  Future<void> _fetchCouple({bool showLoading = true}) async {
     try {
-      setState(() {
-        isLoading = true;
-      });
+      if (showLoading && mounted) {
+        setState(() {
+          isLoading = true;
+        });
+      }
 
       final couple = await _getMyCouple.call();
 
@@ -53,12 +55,17 @@ class _CoupleDaysPageState extends State<CoupleDaysPage>
       });
 
       await _fetchCoupleDays();
-      if (mounted) setState(() => isLoading = false);
     } on DioException {
       if (mounted) context.go(AppRoutePaths.coupleCode);
     } catch (_) {
       if (mounted) context.go(AppRoutePaths.coupleCode);
+    } finally {
+      if (mounted && showLoading) setState(() => isLoading = false);
     }
+  }
+
+  Future<void> _refreshCouple() {
+    return _fetchCouple(showLoading: false);
   }
 
   Future<void> _fetchCoupleDays() async {
@@ -140,129 +147,144 @@ class _CoupleDaysPageState extends State<CoupleDaysPage>
       return const Center(child: CircularProgressIndicator());
     }
 
-    return Container(
-      width: double.infinity,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Row(
-            children: [
-              const SizedBox(width: 20),
-              Expanded(
-                child: Skeletonizer(
-                  enabled: isLoading,
-                  child: Container(
-                    child: Column(
+    return RefreshIndicator(
+      onRefresh: _refreshCouple,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Row(
                       children: [
-                        CircleAvatar(
-                          radius: 50,
-                          backgroundImage: NetworkImage(
-                            // "https://i.pravatar.cc/150?img=3",
-                            userAvatar,
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: Skeletonizer(
+                            enabled: isLoading,
+                            child: Container(
+                              child: Column(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 50,
+                                    backgroundImage: NetworkImage(
+                                      // "https://i.pravatar.cc/150?img=3",
+                                      userAvatar,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _NamePill(name: userName),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        _NamePill(name: userName),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: AnimatedBuilder(
-                  animation: _heartAnimation,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _heartAnimation.value,
-                      child: const Icon(
-                        Icons.favorite,
-                        color: Colors.pink,
-                        size: 50,
-                      ),
-                    );
-                  },
-                ),
-              ),
-              Expanded(
-                child: Skeletonizer(
-                  enabled: isLoading,
-                  child: Container(
-                    child: Column(
-                      children: [
-                        CircleAvatar(
-                          radius: 50,
-                          backgroundImage: NetworkImage(
-                            // "https://i.pravatar.cc/150?img=3",
-                            partnerAvatar,
+                        Expanded(
+                          child: AnimatedBuilder(
+                            animation: _heartAnimation,
+                            builder: (context, child) {
+                              return Transform.scale(
+                                scale: _heartAnimation.value,
+                                child: const Icon(
+                                  Icons.favorite,
+                                  color: Colors.pink,
+                                  size: 50,
+                                ),
+                              );
+                            },
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        _NamePill(name: partnerName),
+                        Expanded(
+                          child: Skeletonizer(
+                            enabled: isLoading,
+                            child: Container(
+                              child: Column(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 50,
+                                    backgroundImage: NetworkImage(
+                                      // "https://i.pravatar.cc/150?img=3",
+                                      partnerAvatar,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _NamePill(name: partnerName),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 20),
                       ],
                     ),
-                  ),
+                    const SizedBox(height: 20),
+                    Skeletonizer(
+                      enabled: isLoading,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 40),
+                            width: 400,
+                            height: 400,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.88),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text("Ngày yêu nhau"),
+                                const SizedBox(height: 8),
+                                Text(
+                                  "${days} ngày",
+                                  style: const TextStyle(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF2D2D2D),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  "${(progress * 100).toStringAsFixed(0)}% năm ${(days ~/ 365) + 1 == 1 ? "đầu tiên" : "thứ ${(days ~/ 365) + 1}"}",
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(
+                            width: 300,
+                            height: 300,
+                            child: CircularProgressIndicator(
+                              value: progress, // số ngày / 365
+                              strokeWidth: 12,
+                              backgroundColor: Colors.grey.shade200,
+                              valueColor: const AlwaysStoppedAnimation(
+                                Colors.pink,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 20),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Skeletonizer(
-            enabled: isLoading,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 40),
-                  width: 400,
-                  height: 400,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.88),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text("Ngày yêu nhau"),
-                      const SizedBox(height: 8),
-                      Text(
-                        "${days} ngày",
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF2D2D2D),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        "${(progress * 100).toStringAsFixed(0)}% năm ${(days ~/ 365) + 1 == 1 ? "đầu tiên" : "thứ ${(days ~/ 365) + 1}"}",
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(
-                  width: 300,
-                  height: 300,
-                  child: CircularProgressIndicator(
-                    value: progress, // số ngày / 365
-                    strokeWidth: 12,
-                    backgroundColor: Colors.grey.shade200,
-                    valueColor: const AlwaysStoppedAnimation(Colors.pink),
-                  ),
-                ),
-              ],
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

@@ -76,7 +76,9 @@ class _ProfilePageState extends State<ProfilePage> {
     super.dispose();
   }
 
-  Future<void> _loadProfile() async {
+  Future<void> _loadProfile({bool showLoading = false}) async {
+    if (showLoading && mounted) setState(() => _isLoading = true);
+
     try {
       final profile = await _getUserInfo();
       if (!mounted) return;
@@ -324,7 +326,7 @@ class _ProfilePageState extends State<ProfilePage> {
       return Scaffold(
         body: Center(
           child: FilledButton.icon(
-            onPressed: _loadProfile,
+            onPressed: () => _loadProfile(showLoading: true),
             icon: const Icon(Icons.refresh),
             label: const Text('Thử lại'),
           ),
@@ -336,35 +338,41 @@ class _ProfilePageState extends State<ProfilePage> {
       backgroundColor: const Color(0xFFFFFAFC),
       body: Stack(
         children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 110),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildProfileHero(profile),
-                const SizedBox(height: 18),
-                _buildInfoPanel(),
-                const SizedBox(height: 18),
-                _buildActionPanel(),
-                if (false) ...[
-                  OutlinedButton.icon(
-                    onPressed: _isUpdatingPassword ? null : _showPasswordSheet,
-                    icon: const Icon(Icons.key_outlined),
-                    label: const Text('Đổi mật khẩu'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFA03B56),
-                      side: const BorderSide(color: Color(0xFFA03B56)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+          RefreshIndicator(
+            onRefresh: _loadProfile,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 110),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildProfileHero(profile),
+                  const SizedBox(height: 18),
+                  _buildInfoPanel(),
+                  const SizedBox(height: 18),
+                  _buildActionPanel(),
+                  if (false) ...[
+                    OutlinedButton.icon(
+                      onPressed: _isUpdatingPassword
+                          ? null
+                          : _showPasswordSheet,
+                      icon: const Icon(Icons.key_outlined),
+                      label: const Text('Đổi mật khẩu'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFA03B56),
+                        side: const BorderSide(color: Color(0xFFA03B56)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextButton.icon(
-                    onPressed: _logout,
-                    icon: const Icon(Icons.logout),
-                    label: const Text('Đăng xuất'),
-                  ),
+                    const SizedBox(height: 10),
+                    TextButton.icon(
+                      onPressed: _logout,
+                      icon: const Icon(Icons.logout),
+                      label: const Text('Đăng xuất'),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
           Positioned(
