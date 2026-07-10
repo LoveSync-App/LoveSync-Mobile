@@ -242,239 +242,246 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: Stack(
           children: [
-            Container(
-              // margin: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-              margin: const EdgeInsets.fromLTRB(20, 40, 20, 0),
-              width: double.infinity,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.pink.withValues(alpha: 0.2),
-                    ),
-                    child: Icon(
-                      Icons.favorite,
-                      size: 30,
-                      color: const Color.fromARGB(255, 102, 17, 45),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  const Text(
-                    "LoveSync",
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 102, 17, 45),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    "Chào Mừng Quay Lại",
-                    style: TextStyle(
-                      fontSize: 26,
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: "Roboto",
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  const Text(
-                    "Đăng nhập để tiếp tục giữ lửa tình yêu",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                      fontFamily: "Roboto",
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text("Email"),
-                      const SizedBox(height: 5),
-                      TextField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.white,
-                          prefixIcon: const Icon(Icons.email_outlined),
-                          enabledBorder: const OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(10)),
-                            borderSide: BorderSide(
-                              width: 2,
-                              color: Color.fromARGB(255, 247, 166, 193),
-                            ),
-                          ),
-                          focusedBorder: const OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(12)),
-                            borderSide: BorderSide(
-                              color: Color.fromARGB(255, 255, 68, 131),
-                              width: 2,
-                            ),
-                          ),
-                          hintText: "Nhập email của bạn",
-                        ),
+            SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(20, 40, 20, 0),
+                width: double.infinity,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.pink.withValues(alpha: 0.2),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text("Mật khẩu"),
-                      const SizedBox(height: 5),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: !_isShowPassword,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.white,
-                          prefixIcon: const Icon(Icons.lock_outlined),
-                          suffix: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _isShowPassword = !_isShowPassword;
-                              });
-                            },
-                            child: Icon(
-                              _isShowPassword
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
-                              size: 20,
-                            ),
-                          ),
-                          enabledBorder: const OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(10)),
-                            borderSide: BorderSide(
-                              width: 2,
-                              color: Color.fromARGB(255, 247, 166, 193),
-                            ),
-                          ),
-                          focusedBorder: const OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(12)),
-                            borderSide: BorderSide(
-                              color: Color.fromARGB(255, 255, 68, 131),
-                              width: 2,
-                            ),
-                          ),
-                          hintText: "Nhập mật khẩu của bạn",
-                        ),
+                      child: Icon(
+                        Icons.favorite,
+                        size: 30,
+                        color: const Color.fromARGB(255, 102, 17, 45),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {
-                        context.push(AppRoutePaths.authForgotPassword);
-                      },
+                    ),
+                    const SizedBox(height: 5),
+                    const Text(
+                      "LoveSync",
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Color.fromARGB(255, 102, 17, 45),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      "Chào Mừng Quay Lại",
+                      style: TextStyle(
+                        fontSize: 26,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: "Roboto",
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    const Text(
+                      "Đăng nhập để tiếp tục giữ lửa tình yêu",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                        fontFamily: "Roboto",
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Email"),
+                        const SizedBox(height: 5),
+                        TextField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: Colors.white,
+                            prefixIcon: const Icon(Icons.email_outlined),
+                            enabledBorder: const OutlineInputBorder(
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(10),
+                              ),
+                              borderSide: BorderSide(
+                                width: 2,
+                                color: Color.fromARGB(255, 247, 166, 193),
+                              ),
+                            ),
+                            focusedBorder: const OutlineInputBorder(
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(12),
+                              ),
+                              borderSide: BorderSide(
+                                color: Color.fromARGB(255, 255, 68, 131),
+                                width: 2,
+                              ),
+                            ),
+                            hintText: "Nhập email của bạn",
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Mật khẩu"),
+                        const SizedBox(height: 5),
+                        TextField(
+                          controller: _passwordController,
+                          obscureText: !_isShowPassword,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: Colors.white,
+                            prefixIcon: const Icon(Icons.lock_outlined),
+                            suffix: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _isShowPassword = !_isShowPassword;
+                                });
+                              },
+                              child: Icon(
+                                _isShowPassword
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                                size: 20,
+                              ),
+                            ),
+                            enabledBorder: const OutlineInputBorder(
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(10),
+                              ),
+                              borderSide: BorderSide(
+                                width: 2,
+                                color: Color.fromARGB(255, 247, 166, 193),
+                              ),
+                            ),
+                            focusedBorder: const OutlineInputBorder(
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(12),
+                              ),
+                              borderSide: BorderSide(
+                                color: Color.fromARGB(255, 255, 68, 131),
+                                width: 2,
+                              ),
+                            ),
+                            hintText: "Nhập mật khẩu của bạn",
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          context.push(AppRoutePaths.authForgotPassword);
+                        },
 
-                      child: const Text("Quên mật khẩu?"),
+                        child: const Text("Quên mật khẩu?"),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        _onClickLogin();
-                      },
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _onClickLogin();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(
+                            255,
+                            255,
+                            154,
+                            188,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          "Đăng Nhập",
+                          style: TextStyle(fontSize: 16, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Divider(thickness: 1, color: Colors.grey),
+                        ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          "Hoặc đăng nhập bằng",
+                          style: TextStyle(color: Colors.black),
+                        ),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Divider(thickness: 1, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _onClickGoogleLogin,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(
-                          255,
-                          255,
-                          154,
-                          188,
+                        backgroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 40,
+                          vertical: 12,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(15),
                         ),
                       ),
-                      child: const Text(
-                        "Đăng Nhập",
-                        style: TextStyle(fontSize: 16, color: Colors.white),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const FaIcon(FontAwesomeIcons.google, size: 20),
+
+                          const SizedBox(width: 8),
+                          const Text(
+                            "Google",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      const Expanded(
-                        child: Divider(thickness: 1, color: Colors.grey),
-                      ),
-                      const SizedBox(width: 10),
-                      const Text(
-                        "Hoặc đăng nhập bằng",
-                        style: TextStyle(color: Colors.black),
-                      ),
-                      const SizedBox(width: 10),
-                      const Expanded(
-                        child: Divider(thickness: 1, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _onClickGoogleLogin,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 40,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                    ),
-                    child: Row(
+                    const SizedBox(height: 24),
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const FaIcon(FontAwesomeIcons.google, size: 20),
-
-                        const SizedBox(width: 8),
-                        const Text(
-                          "Google",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                        const Text("Bạn chưa có tài khoản? "),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
+                          onPressed: () {
+                            context.push(AppRoutePaths.authRegister);
+                          },
+                          child: const Text("Đăng ký ngay"),
                         ),
                       ],
                     ),
-                  ),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        const Spacer(),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text("Bạn chưa có tài khoản? "),
-                            TextButton(
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              onPressed: () {
-                                context.push(AppRoutePaths.authRegister);
-                              },
-                              child: const Text("Đăng ký ngay"),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                      ],
-                    ),
-                  ),
-                ],
+                    const SizedBox(height: 10),
+                  ],
+                ),
               ),
             ),
             if (_isLoading)

@@ -3,20 +3,25 @@
         "platforms": {
             "android": {
                 "default": {
-                    "projectId": "love-sync-675db",
-                    "appId": "1:375400582595:android:2974f5e3c2210988a3c176",
+                    "projectId": "lovesync-9ee1e",
+                    "appId": "1:664260312342:android:e2e01cdef1ad7ee5246437",
                     "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "ios": {
+                "default": {
+                    "projectId": "lovesync-9ee1e",
+                    "appId": "1:664260312342:ios:1dd40362f2bb303e246437",
+                    "uploadDebugSymbols": false,
+                    "fileOutput": "ios/Runner/GoogleService-Info.plist"
                 }
             },
             "dart": {
                 "lib/firebase_options.dart": {
-                    "projectId": "love-sync-675db",
+                    "projectId": "lovesync-9ee1e",
                     "configurations": {
-                        "android": "1:375400582595:android:2974f5e3c2210988a3c176",
-                        "ios": "1:375400582595:ios:6ba7448859299f77a3c176",
-                        "macos": "1:375400582595:ios:6ba7448859299f77a3c176",
-                        "web": "1:375400582595:web:16e1a6715368d29ba3c176",
-                        "windows": "1:375400582595:web:ff6b0eaab29bc31ea3c176"
+                        "android": "1:664260312342:android:e2e01cdef1ad7ee5246437",
+                        "ios": "1:664260312342:ios:1dd40362f2bb303e246437"
                     }
                 }
             }

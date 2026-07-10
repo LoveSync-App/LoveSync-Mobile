@@ -41,12 +41,16 @@ class _CallOverlayState extends State<CallOverlay> {
     _synchronizeMedia(callProvider);
     _synchronizeTimer(callProvider.phase);
 
-    return Stack(
-      children: [
-        widget.child,
-        if (callProvider.isVisible)
-          Positioned.fill(child: _buildCallScreen(callProvider)),
-      ],
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: Stack(
+        children: [
+          widget.child,
+          if (callProvider.isVisible)
+            Positioned.fill(child: _buildCallScreen(callProvider)),
+        ],
+      ),
     );
   }
 

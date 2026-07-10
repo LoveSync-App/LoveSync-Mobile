@@ -28,16 +28,13 @@ import 'package:lovesync_mobile/features/location/domain/usecases/put_update_liv
 import 'package:lovesync_mobile/features/location/presentation/providers/location_sharing_provider.dart';
 import 'package:lovesync_mobile/providers/auth_provider.dart';
 import 'app_router.dart';
+import 'firebase_options.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await initializeDateFormatting('vi_VN');
-
-  await Firebase.initializeApp();
-
-  await _requestNotificationPermission();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(
     MultiProvider(
@@ -103,6 +100,18 @@ void main() async {
       child: const MyApp(),
     ),
   );
+
+  unawaited(_initializePostAppServices());
+}
+
+Future<void> _initializePostAppServices() async {
+  try {
+    await initializeDateFormatting('vi_VN');
+    await _requestNotificationPermission();
+  } catch (error, stackTrace) {
+    debugPrint('Không thể khởi tạo Firebase: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
 }
 
 Future<void> _requestNotificationPermission() async {

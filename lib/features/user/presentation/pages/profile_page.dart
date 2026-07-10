@@ -309,6 +309,35 @@ class _ProfilePageState extends State<ProfilePage> {
     if (mounted) await context.read<AuthProvider>().logout();
   }
 
+  Future<void> _confirmLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Đăng xuất?'),
+        content: const Text(
+          'Bạn có chắc muốn đăng xuất khỏi tài khoản trên thiết bị này?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFC2414B),
+            ),
+            child: const Text('Đăng xuất'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await _logout();
+    }
+  }
+
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
@@ -342,7 +371,7 @@ class _ProfilePageState extends State<ProfilePage> {
             onRefresh: _loadProfile,
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 110),
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -351,6 +380,29 @@ class _ProfilePageState extends State<ProfilePage> {
                   _buildInfoPanel(),
                   const SizedBox(height: 18),
                   _buildActionPanel(),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    height: 52,
+                    child: FilledButton.icon(
+                      onPressed: _isSaving || _isUpdatingPassword
+                          ? null
+                          : _saveProfile,
+                      icon: _isSaving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.save_outlined),
+                      label: Text(_isSaving ? 'Đang lưu...' : 'Lưu thay đổi'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFA03B56),
+                      ),
+                    ),
+                  ),
                   if (false) ...[
                     OutlinedButton.icon(
                       onPressed: _isUpdatingPassword
@@ -372,35 +424,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ],
                 ],
-              ),
-            ),
-          ),
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: 18,
-            child: SafeArea(
-              child: SizedBox(
-                height: 52,
-                child: FilledButton.icon(
-                  onPressed: _isSaving || _isUpdatingPassword
-                      ? null
-                      : _saveProfile,
-                  icon: _isSaving
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.save_outlined),
-                  label: Text(_isSaving ? 'Đang lưu...' : 'Lưu thay đổi'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFA03B56),
-                  ),
-                ),
               ),
             ),
           ),
@@ -530,7 +553,7 @@ class _ProfilePageState extends State<ProfilePage> {
             icon: Icons.logout,
             title: 'Đăng xuất',
             subtitle: 'Rời khỏi tài khoản trên thiết bị này',
-            onTap: _logout,
+            onTap: _confirmLogout,
             destructive: true,
           ),
         ],

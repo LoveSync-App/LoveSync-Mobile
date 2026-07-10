@@ -282,14 +282,18 @@ class _PartnerInfoPageState extends State<PartnerInfoPage>
                       ),
                       child: Column(
                         children: [
-                          const Text(
-                            'Đã tìm thấy người ấy!',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1F1F1F),
-                              height: 1.15,
+                          const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Đã tìm thấy người ấy!',
+                              maxLines: 1,
+                              softWrap: false,
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF1F1F1F),
+                                height: 1.15,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 18),
