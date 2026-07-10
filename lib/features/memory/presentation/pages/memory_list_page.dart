@@ -376,18 +376,21 @@ class _MemoryListPageState extends State<MemoryListPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Hiển thị hình ảnh động lấy từ Object data thực tế
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              item.fileUrl,
-              height: 160,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                width: double.infinity,
+          GestureDetector(
+            onTap: () => _openMemoryImage(item),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                item.fileUrl,
                 height: 160,
-                color: Colors.grey.shade200,
-                child: const Icon(Icons.broken_image, color: Colors.grey),
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: double.infinity,
+                  height: 160,
+                  color: Colors.grey.shade200,
+                  child: const Icon(Icons.broken_image, color: Colors.grey),
+                ),
               ),
             ),
           ),
@@ -413,6 +416,63 @@ class _MemoryListPageState extends State<MemoryListPage> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  void _openMemoryImage(MemoryResponse item) {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black,
+      builder: (dialogContext) => Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                minScale: 0.8,
+                maxScale: 4,
+                child: Image.network(
+                  item.fileUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.broken_image_outlined,
+                    color: Colors.white,
+                    size: 52,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 12,
+              right: 12,
+              child: SafeArea(
+                child: IconButton.filled(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  icon: const Icon(Icons.close),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white.withValues(alpha: 0.16),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+            if (item.description.isNotEmpty)
+              Positioned(
+                left: 20,
+                right: 20,
+                bottom: 20,
+                child: SafeArea(
+                  top: false,
+                  child: Text(
+                    item.description,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

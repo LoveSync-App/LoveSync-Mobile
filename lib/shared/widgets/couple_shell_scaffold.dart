@@ -19,6 +19,13 @@ class CoupleShellScaffold extends StatefulWidget {
     if (state != null) await state._fetchCoupleData();
   }
 
+  static bool isCoupleActive(BuildContext context) {
+    return context
+            .findAncestorStateOfType<_CoupleShellScaffoldState>()
+            ?.isCouple ??
+        false;
+  }
+
   @override
   State<StatefulWidget> createState() => _CoupleShellScaffoldState();
 }

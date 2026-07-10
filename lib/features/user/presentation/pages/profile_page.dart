@@ -3,12 +3,17 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
+import 'package:lovesync_mobile/app_routes.dart';
 import 'package:lovesync_mobile/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:lovesync_mobile/features/auth/data/datasources/google_auth_datasource.dart';
 import 'package:lovesync_mobile/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:lovesync_mobile/features/auth/domain/usecases/post_add_password.dart';
+import 'package:lovesync_mobile/features/couple/data/datasources/couple_remote_datasource.dart';
+import 'package:lovesync_mobile/features/couple/data/repositories/couple_repository_impl.dart';
+import 'package:lovesync_mobile/features/couple/domain/usecases/patch_unlink_couple.dart';
 import 'package:lovesync_mobile/features/user/data/datasources/user_remote_datasource.dart';
 import 'package:lovesync_mobile/features/user/data/repositories/user_repository_impl.dart';
 import 'package:lovesync_mobile/features/user/domain/entities/user_response.dart';
@@ -18,6 +23,7 @@ import 'package:lovesync_mobile/providers/auth_provider.dart';
 import 'package:lovesync_mobile/shared/upload/data/datasources/upload_remote_datasource.dart';
 import 'package:lovesync_mobile/shared/upload/data/repositories/upload_repositoty_impl.dart';
 import 'package:lovesync_mobile/shared/upload/domain/usecases/upload_file.dart';
+import 'package:lovesync_mobile/shared/widgets/couple_shell_scaffold.dart';
 import 'package:provider/provider.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -34,6 +40,7 @@ class _ProfilePageState extends State<ProfilePage> {
   late final UploadFile _uploadFile;
   late final AuthRemoteDatasource _authRemoteDatasource;
   late final GoogleAuthDatasource _googleAuthDatasource;
+  late final PatchUnlinkCouple _unlinkCouple;
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -48,6 +55,7 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isSaving = false;
   bool _isUpdatingPassword = false;
   bool _isPickingAvatar = false;
+  bool _isUnlinking = false;
 
   @override
   void initState() {
@@ -63,6 +71,9 @@ class _ProfilePageState extends State<ProfilePage> {
     _getUserInfo = GetUserInfo(userRepository);
     _patchUpdateMe = PatchUpdateMe(userRepository);
     _uploadFile = UploadFile(UploadRepositotyImpl(UploadRemoteDatasource(dio)));
+    _unlinkCouple = PatchUnlinkCouple(
+      CoupleRepositoryImpl(CoupleRemoteDatasource(dio)),
+    );
 
     _loadProfile();
   }
@@ -309,6 +320,46 @@ class _ProfilePageState extends State<ProfilePage> {
     if (mounted) await context.read<AuthProvider>().logout();
   }
 
+  Future<void> _confirmUnlinkCouple() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Hủy ghép đôi?'),
+        content: const Text(
+          'Bạn sẽ không còn liên kết với người ấy. Bạn có thể ghép đôi lại sau.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Giữ lại'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFC2414B),
+            ),
+            child: const Text('Hủy ghép đôi'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isUnlinking = true);
+    try {
+      await _unlinkCouple();
+      if (!mounted) return;
+      await CoupleShellScaffold.refreshCoupleState(context);
+      if (mounted) context.go(AppRoutePaths.coupleCode);
+    } on DioException {
+      if (mounted) {
+        _showSnackBar('Không thể hủy ghép đôi. Vui lòng thử lại.');
+      }
+    } finally {
+      if (mounted) setState(() => _isUnlinking = false);
+    }
+  }
+
   Future<void> _confirmLogout() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -548,6 +599,18 @@ class _ProfilePageState extends State<ProfilePage> {
             subtitle: 'Cập nhật mật khẩu đăng nhập',
             onTap: _isUpdatingPassword ? null : _showPasswordSheet,
           ),
+          if (CoupleShellScaffold.isCoupleActive(context)) ...[
+            const Divider(height: 1, color: Color(0xFFF4E3E8)),
+            _buildActionTile(
+              icon: Icons.link_off_outlined,
+              title: _isUnlinking
+                  ? 'Đang hủy ghép đôi...'
+                  : 'Không ghép đôi nữa',
+              subtitle: 'Ngừng liên kết với người ấy',
+              onTap: _isUnlinking ? null : _confirmUnlinkCouple,
+              destructive: true,
+            ),
+          ],
           const Divider(height: 1, color: Color(0xFFF4E3E8)),
           _buildActionTile(
             icon: Icons.logout,
