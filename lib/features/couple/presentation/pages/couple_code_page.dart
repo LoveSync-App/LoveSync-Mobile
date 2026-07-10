@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:lovesync_mobile/app_routes.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/features/couple/data/datasources/couple_remote_datasource.dart';
@@ -79,7 +78,23 @@ class _CoupleCodePageState extends State<CoupleCodePage> {
 
     final box =
         _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
-    final logo = await rootBundle.load('assets/logo.png');
+    final qrImageData = await QrPainter(
+      data: coupleCode,
+      version: QrVersions.auto,
+      errorCorrectionLevel: QrErrorCorrectLevel.Q,
+    ).toImageData(800);
+    if (qrImageData == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không thể tạo ảnh mã QR. Vui lòng thử lại.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
     await SharePlus.instance.share(
       ShareParams(
         title: 'Mã ghép đôi LoveSync',
@@ -87,12 +102,12 @@ class _CoupleCodePageState extends State<CoupleCodePage> {
             'Mình mời bạn ghép đôi trên LoveSync. Nhập mã ghép đôi của mình: $coupleCode',
         files: [
           XFile.fromData(
-            logo.buffer.asUint8List(),
+            qrImageData.buffer.asUint8List(),
             mimeType: 'image/png',
-            name: 'lovesync-logo.png',
+            name: 'ma-ghep-doi-lovesync.png',
           ),
         ],
-        fileNameOverrides: const ['lovesync-logo.png'],
+        fileNameOverrides: const ['ma-ghep-doi-lovesync.png'],
         sharePositionOrigin: box == null
             ? null
             : box.localToGlobal(Offset.zero) & box.size,
