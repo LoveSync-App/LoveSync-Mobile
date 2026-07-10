@@ -33,6 +33,10 @@ class CoupleRemoteDatasource {
     await dio.post('/couples/code/$code');
   }
 
+  Future<void> unlinkCouple() async {
+    await dio.patch('/couples/me/unlink');
+  }
+
   Future<List<InvitationModal>> getInvitationsPending() async {
     final response = await dio.get('/couples/invitations/PENDING');
     List<InvitationModal> invitations = (response.data['data'] as List)

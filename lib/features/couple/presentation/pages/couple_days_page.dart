@@ -7,6 +7,8 @@ import 'package:lovesync_mobile/features/couple/data/datasources/couple_remote_d
 import 'package:lovesync_mobile/features/couple/data/repositories/couple_repository_impl.dart';
 import 'package:lovesync_mobile/features/couple/domain/usecases/get_my_couple.dart';
 import 'package:lovesync_mobile/features/couple/domain/usecases/get_my_couple_days.dart';
+import 'package:lovesync_mobile/features/couple/domain/usecases/patch_unlink_couple.dart';
+import 'package:lovesync_mobile/shared/widgets/couple_shell_scaffold.dart';
 import 'package:provider/provider.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
@@ -26,8 +28,10 @@ class _CoupleDaysPageState extends State<CoupleDaysPage>
 
   late final GetMyCouple _getMyCouple;
   late final GetMyCoupleDays _getMyCoupleDays;
+  late final PatchUnlinkCouple _unlinkCouple;
 
   bool isLoading = true;
+  bool _isUnlinking = false;
   double progress = 0.0;
   int days = 0;
   String userName = "Minh Quân";
@@ -105,8 +109,58 @@ class _CoupleDaysPageState extends State<CoupleDaysPage>
         CoupleRemoteDatasource(context.read<DioClient>().dio),
       ),
     );
+    _unlinkCouple = PatchUnlinkCouple(
+      CoupleRepositoryImpl(
+        CoupleRemoteDatasource(context.read<DioClient>().dio),
+      ),
+    );
 
     _fetchCouple();
+  }
+
+  Future<void> _confirmUnlinkCouple() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Hủy ghép đôi?'),
+        content: const Text(
+          'Bạn sẽ không còn liên kết với người ấy. Bạn có thể ghép đôi lại sau.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Giữ lại'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFC2414B),
+            ),
+            child: const Text('Hủy ghép đôi'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isUnlinking = true);
+    try {
+      await _unlinkCouple();
+      if (!mounted) return;
+      await CoupleShellScaffold.refreshCoupleState(context);
+      if (mounted) context.go(AppRoutePaths.coupleCode);
+    } on DioException {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không thể hủy ghép đôi. Vui lòng thử lại.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUnlinking = false);
+    }
   }
 
   @override
@@ -279,6 +333,26 @@ class _CoupleDaysPageState extends State<CoupleDaysPage>
                         ],
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    TextButton.icon(
+                      onPressed: _isUnlinking ? null : _confirmUnlinkCouple,
+                      icon: _isUnlinking
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.link_off_outlined),
+                      label: Text(
+                        _isUnlinking
+                            ? 'Đang hủy ghép đôi...'
+                            : 'Không ghép đôi nữa',
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFFC2414B),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),

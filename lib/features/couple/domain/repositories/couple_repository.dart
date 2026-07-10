@@ -10,6 +10,7 @@ abstract class CoupleRepository {
   Future<Couple> getMyCouple();
   Future<CoupleDay> getCoupleDays();
   Future<void> createCouple(String code);
+  Future<void> unlinkCouple();
   Future<List<Invitation>> getInvitationsPending();
   Future<void> acceptInvitation(String invitationId);
   Future<void> rejectInvitation(String invitationId);

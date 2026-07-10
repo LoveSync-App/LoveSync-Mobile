@@ -63,6 +63,11 @@ class CoupleRepositoryImpl implements CoupleRepository {
   }
 
   @override
+  Future<void> unlinkCouple() {
+    return remoteDatasource.unlinkCouple();
+  }
+
+  @override
   Future<void> acceptInvitation(String invitationId) async {
     await remoteDatasource.acceptInvitation(invitationId);
   }

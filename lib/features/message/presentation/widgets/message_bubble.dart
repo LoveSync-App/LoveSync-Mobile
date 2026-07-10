@@ -367,15 +367,55 @@ class _AttachmentPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final child = type == ChatMessageType.video
-        ? _buildVideoPreview(context)
-        : _buildImagePreview(context);
+    if (_isImageAttachment) {
+      return GestureDetector(
+        onTap: () => _openImageViewer(context),
+        child: _buildImagePreview(context),
+      );
+    }
+    if (_isVideoAttachment) {
+      return GestureDetector(
+        onTap: () => _openVideoViewer(context),
+        child: _buildVideoPreview(context),
+      );
+    }
 
-    return GestureDetector(
-      onTap: () => type == ChatMessageType.video
-          ? _openVideoViewer(context)
-          : _openImageViewer(context),
-      child: child,
+    return _buildFilePreview();
+  }
+
+  bool get _isImageAttachment =>
+      _hasExtension({'.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic'});
+
+  bool get _isVideoAttachment =>
+      _hasExtension({'.mp4', '.mov', '.m4v', '.webm'});
+
+  bool _hasExtension(Set<String> extensions) {
+    final path = Uri.tryParse(url)?.path.toLowerCase() ?? url.toLowerCase();
+    return extensions.any(path.endsWith);
+  }
+
+  Widget _buildFilePreview() {
+    final name = (Uri.tryParse(url)?.pathSegments.lastOrNull ?? 'Tệp đính kèm')
+        .replaceAll('%20', ' ');
+    return Container(
+      width: 220,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.insert_drive_file_outlined,
+            color: isMine ? Colors.white : const Color(0xFFA03B56),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(name, maxLines: 2, overflow: TextOverflow.ellipsis),
+          ),
+        ],
+      ),
     );
   }
 

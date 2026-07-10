@@ -14,6 +14,11 @@ class CoupleShellScaffold extends StatefulWidget {
 
   const CoupleShellScaffold({super.key, required this.navigationShell});
 
+  static Future<void> refreshCoupleState(BuildContext context) async {
+    final state = context.findAncestorStateOfType<_CoupleShellScaffoldState>();
+    if (state != null) await state._fetchCoupleData();
+  }
+
   @override
   State<StatefulWidget> createState() => _CoupleShellScaffoldState();
 }
@@ -40,6 +45,9 @@ class _CoupleShellScaffoldState extends State<CoupleShellScaffold> {
         setState(() => isLoading = true);
       }
       await _getMyCouple();
+      if (mounted) {
+        setState(() => isCouple = true);
+      }
     } on DioException catch (e) {
       if (!mounted) return;
       if (e.response?.statusCode == 404) {
@@ -84,7 +92,20 @@ class _CoupleShellScaffoldState extends State<CoupleShellScaffold> {
             )
           else
             IconButton(
-              onPressed: () => {context.push(AppRoutePaths.coupleInvitations)},
+              onPressed: () async {
+                final accepted = await context.push<bool>(
+                  AppRoutePaths.coupleInvitations,
+                );
+                if (accepted != true || !mounted) return;
+
+                await _fetchCoupleData();
+                if (mounted) {
+                  widget.navigationShell.goBranch(
+                    RouterIndex.home,
+                    initialLocation: true,
+                  );
+                }
+              },
               icon: Icon(
                 Icons.notifications_none,
                 color: const Color(0xFF1A1C1D),

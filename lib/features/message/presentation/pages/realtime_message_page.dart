@@ -29,7 +29,7 @@ import 'package:lovesync_mobile/features/message/presentation/widgets/partner_ch
 import 'package:lovesync_mobile/providers/auth_provider.dart';
 import 'package:lovesync_mobile/shared/upload/data/datasources/upload_remote_datasource.dart';
 import 'package:lovesync_mobile/shared/upload/data/repositories/upload_repositoty_impl.dart';
-import 'package:lovesync_mobile/shared/upload/domain/usecases/upload_file.dart';
+import 'package:lovesync_mobile/shared/upload/domain/usecases/upload_attachment_file.dart';
 import 'package:provider/provider.dart';
 
 class RealtimeMessagePage extends StatefulWidget {
@@ -46,7 +46,7 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
   late final PostSendMessage _postSendMessage;
   late final GetRecentMessages _getRecentMessages;
   late final GetMyCouple _getMyCouple;
-  late final UploadFile _uploadFile;
+  late final UploadAttachmentFile _uploadAttachmentFile;
   late final ChatRemoteDatasource _chatRemoteDatasource;
   late final E2eeManager _e2eeManager;
   final ImagePicker _imagePicker = ImagePicker();
@@ -87,7 +87,7 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
         CoupleRemoteDatasource(context.read<DioClient>().dio),
       ),
     );
-    _uploadFile = UploadFile(
+    _uploadAttachmentFile = UploadAttachmentFile(
       UploadRepositotyImpl(
         UploadRemoteDatasource(context.read<DioClient>().dio),
       ),
@@ -337,7 +337,7 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
     try {
       final uploadedUrls = attachments.isEmpty
           ? <String>[]
-          : await Future.wait(attachments.map(_uploadFile.call));
+          : await Future.wait(attachments.map(_uploadAttachmentFile.call));
 
       var encryption = text.isEmpty
           ? null
@@ -420,12 +420,9 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
     final result = await FilePicker.pickFiles(allowMultiple: true);
     if (result == null || !mounted) return;
 
-    final files = result.paths.whereType<String>().map(File.new).toList();
-    if (files.isEmpty) return;
-
-    setState(() {
-      _selectedAttachments.addAll(files);
-    });
+    await _addAttachments(
+      result.paths.whereType<String>().map(File.new).toList(),
+    );
   }
 
   Future<void> _pickImageAttachment() async {
@@ -434,9 +431,36 @@ class _RealtimeMessagePageState extends State<RealtimeMessagePage> {
     final images = await _imagePicker.pickMultiImage(imageQuality: 80);
     if (images.isEmpty || !mounted) return;
 
-    setState(() {
-      _selectedAttachments.addAll(images.map((image) => File(image.path)));
-    });
+    await _addAttachments(images.map((image) => File(image.path)).toList());
+  }
+
+  Future<void> _addAttachments(List<File> candidates) async {
+    const maxAttachmentBytes = 3 * 1024 * 1024;
+    final accepted = <File>[];
+    var rejectedCount = 0;
+
+    for (final file in candidates) {
+      if (await file.length() <= maxAttachmentBytes) {
+        accepted.add(file);
+      } else {
+        rejectedCount++;
+      }
+    }
+
+    if (!mounted) return;
+    if (accepted.isNotEmpty) {
+      setState(() => _selectedAttachments.addAll(accepted));
+    }
+    if (rejectedCount > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '$rejectedCount tệp vượt quá giới hạn 3 MB và không được thêm.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _showLocationActions() async {
