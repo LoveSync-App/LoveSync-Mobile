@@ -66,7 +66,7 @@ class _LocationMapState extends State<LocationMap> {
         children: [
           TileLayer(
             urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            userAgentPackageName: 'com.example.lovesync_mobile',
+            userAgentPackageName: 'com.dinhphu.lovesync',
           ),
           MarkerLayer(
             markers: widget.markers

@@ -51,6 +51,7 @@ class _LiveLocationPageState extends State<LiveLocationPage> {
     final option = await showModalBottomSheet<_ShareDurationOption>(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       builder: (context) => const _DurationSheet(),
     );
     if (option == null || !mounted) return;
@@ -349,43 +350,45 @@ class _DurationSheet extends StatelessWidget {
     ];
 
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Chia sẻ trong bao lâu?',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Bạn có thể dừng bất cứ lúc nào.',
-              style: TextStyle(color: Color(0xFF70757A)),
-            ),
-            const SizedBox(height: 12),
-            ...options.map(
-              (option) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(
-                  backgroundColor: Color(0xFFFFE7ED),
-                  child: Icon(
-                    option.untilStopped
-                        ? Icons.all_inclusive_rounded
-                        : Icons.schedule,
-                    color: const Color(0xFFA03B56),
-                  ),
-                ),
-                title: Text(option.label),
-                subtitle: option.untilStopped
-                    ? const Text('Chỉ dừng khi bạn chủ động tắt chia sẻ')
-                    : null,
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => Navigator.of(context).pop(option),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Chia sẻ trong bao lâu?',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              const Text(
+                'Bạn có thể dừng bất cứ lúc nào.',
+                style: TextStyle(color: Color(0xFF70757A)),
+              ),
+              const SizedBox(height: 12),
+              ...options.map(
+                (option) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundColor: Color(0xFFFFE7ED),
+                    child: Icon(
+                      option.untilStopped
+                          ? Icons.all_inclusive_rounded
+                          : Icons.schedule,
+                      color: const Color(0xFFA03B56),
+                    ),
+                  ),
+                  title: Text(option.label),
+                  subtitle: option.untilStopped
+                      ? const Text('Chỉ dừng khi bạn chủ động tắt chia sẻ')
+                      : null,
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => Navigator.of(context).pop(option),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

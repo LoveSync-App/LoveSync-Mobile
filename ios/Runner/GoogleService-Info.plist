@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>664260312342-tvp3hlho6de5b6cm6cdr7tkcfmn8ckre.apps.googleusercontent.com</string>
+	<string>664260312342-71377onb9om25lfesnaufqkli8o9gcj8.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.664260312342-tvp3hlho6de5b6cm6cdr7tkcfmn8ckre</string>
+	<string>com.googleusercontent.apps.664260312342-71377onb9om25lfesnaufqkli8o9gcj8</string>
 	<key>API_KEY</key>
 	<string>AIzaSyCoEilrQPv7LmdI8vg7_FWEULSecKGRcbo</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +13,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.lovesyncMobile</string>
+	<string>com.dinhphu.lovesync</string>
 	<key>PROJECT_ID</key>
 	<string>lovesync-9ee1e</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:664260312342:ios:1dd40362f2bb303e246437</string>
+	<string>1:664260312342:ios:d194ec5f642bbdd1246437</string>
 </dict>
 </plist>

@@ -54,7 +54,13 @@ class CoupleRepositoryImpl implements CoupleRepository {
   @override
   Future<CoupleDay> getCoupleDays() async {
     CoupleDayModal result = await remoteDatasource.getCoupleDays();
-    return CoupleDay(loveDays: result.loveDays);
+    return CoupleDay(loveDays: result.loveDays, startDate: result.startDate);
+  }
+
+  @override
+  Future<CoupleDay> updateStartDate(DateTime startDate) async {
+    final result = await remoteDatasource.updateStartDate(startDate);
+    return CoupleDay(loveDays: result.loveDays, startDate: result.startDate);
   }
 
   @override

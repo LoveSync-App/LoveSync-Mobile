@@ -1,5 +1,6 @@
 class CoupleDay {
   int loveDays;
+  DateTime? startDate;
 
-  CoupleDay({required this.loveDays});
+  CoupleDay({required this.loveDays, this.startDate});
 }

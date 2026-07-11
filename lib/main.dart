@@ -34,14 +34,24 @@ import 'package:provider/provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  final authProvider = AuthProvider(SharedPreferencesAuthStorage());
+  await authProvider.load();
+
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  } catch (error, stackTrace) {
+    // Firebase/FCM must not prevent the app from opening after a cold start.
+    debugPrint('Không thể khởi tạo Firebase: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
 
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider(SharedPreferencesAuthStorage())..load(),
-        ),
+        ChangeNotifierProvider(create: (_) => authProvider),
         Provider<DioClient>(
           create: (context) => DioClient(
             SharedPreferencesAuthStorage(),
@@ -102,6 +112,11 @@ void main() async {
   );
 
   unawaited(_initializePostAppServices());
+}
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }
 
 Future<void> _initializePostAppServices() async {

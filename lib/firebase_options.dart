@@ -52,19 +52,19 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCZtCRZcW0bV0qgpj0WUxFh-MiQjxQVir0',
-    appId: '1:664260312342:android:e2e01cdef1ad7ee5246437',
+    appId: '1:664260312342:android:d0fdf2d809af4f31246437',
     messagingSenderId: '664260312342',
     projectId: 'lovesync-9ee1e',
     storageBucket: 'lovesync-9ee1e.firebasestorage.app',
   );
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCoEilrQPv7LmdI8vg7_FWEULSecKGRcbo',
-    appId: '1:664260312342:ios:1dd40362f2bb303e246437',
+    appId: '1:664260312342:ios:d194ec5f642bbdd1246437',
     messagingSenderId: '664260312342',
     projectId: 'lovesync-9ee1e',
     storageBucket: 'lovesync-9ee1e.firebasestorage.app',
-    iosClientId: '664260312342-tvp3hlho6de5b6cm6cdr7tkcfmn8ckre.apps.googleusercontent.com',
-    iosBundleId: 'com.example.lovesyncMobile',
+    iosClientId: '664260312342-71377onb9om25lfesnaufqkli8o9gcj8.apps.googleusercontent.com',
+    iosBundleId: 'com.dinhphu.lovesync',
   );
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyD0sn4J8nhReoshM4pWGOv-1F0jwouMTfw',

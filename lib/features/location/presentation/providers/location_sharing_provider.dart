@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:lovesync_mobile/features/location/data/datasources/location_socket_datasource.dart';
@@ -371,6 +372,15 @@ class LocationSharingProvider extends ChangeNotifier {
 
   String _messageFor(Object error) {
     if (error is LocationPermissionException) return error.message;
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map) {
+        final message = data['message'] ?? data['error'];
+        if (message != null && message.toString().isNotEmpty) {
+          return message.toString();
+        }
+      }
+    }
     return 'Không thể cập nhật vị trí. Vui lòng thử lại.';
   }
 

@@ -74,8 +74,8 @@ class LocationRemoteDatasource {
       'latitude': position.latitude,
       'longitude': position.longitude,
       'accuracy': position.accuracy,
-      'heading': position.heading,
-      'speed': position.speed,
+      if (position.heading >= 0) 'heading': position.heading,
+      if (position.speed >= 0) 'speed': position.speed,
       'capturedAt': position.timestamp.toUtc().toIso8601String(),
     };
   }

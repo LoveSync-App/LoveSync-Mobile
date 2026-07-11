@@ -22,17 +22,27 @@ class AuthProvider extends ChangeNotifier {
   Future<void> load() async {
     _isLoadingInit = true;
     notifyListeners();
-    _accessToken = await _authStorage.readAccessToken() ?? '';
-    _refreshToken = await _authStorage.readRefreshToken() ?? '';
-    _userId = await _authStorage.readUserId() ?? '';
-    if (_userId.isEmpty && _accessToken.isNotEmpty) {
-      _userId = _readUserIdFromToken(_accessToken);
-      if (_userId.isNotEmpty) {
-        await _authStorage.saveUserId(_userId);
+    try {
+      _accessToken = await _authStorage.readAccessToken() ?? '';
+      _refreshToken = await _authStorage.readRefreshToken() ?? '';
+      _userId = await _authStorage.readUserId() ?? '';
+      if (_userId.isEmpty && _accessToken.isNotEmpty) {
+        _userId = _readUserIdFromToken(_accessToken);
+        if (_userId.isNotEmpty) {
+          await _authStorage.saveUserId(_userId);
+        }
       }
+    } catch (error, stackTrace) {
+      // Corrupted/unavailable persisted data must not block a cold start.
+      debugPrint('Không thể khôi phục phiên đăng nhập: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      _accessToken = '';
+      _refreshToken = '';
+      _userId = '';
+    } finally {
+      _isLoadingInit = false;
+      notifyListeners();
     }
-    _isLoadingInit = false;
-    notifyListeners();
   }
 
   Future<void> login(String accessToken, String userId) async {

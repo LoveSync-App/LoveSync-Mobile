@@ -94,14 +94,7 @@ class LocationSocketDatasource {
 
     socket.emitWithAck(
       'location:update',
-      {
-        'latitude': position.latitude,
-        'longitude': position.longitude,
-        'accuracy': position.accuracy,
-        'heading': position.heading,
-        'speed': position.speed,
-        'capturedAt': position.timestamp.toUtc().toIso8601String(),
-      },
+      _positionData(position),
       ack: (data) {
         if (completer.isCompleted) return;
         timeout.cancel();
@@ -165,6 +158,17 @@ class LocationSocketDatasource {
       return data.map((key, value) => MapEntry(key.toString(), value));
     }
     return const {};
+  }
+
+  Map<String, dynamic> _positionData(Position position) {
+    return {
+      'latitude': position.latitude,
+      'longitude': position.longitude,
+      'accuracy': position.accuracy,
+      if (position.heading >= 0) 'heading': position.heading,
+      if (position.speed >= 0) 'speed': position.speed,
+      'capturedAt': position.timestamp.toUtc().toIso8601String(),
+    };
   }
 }
 

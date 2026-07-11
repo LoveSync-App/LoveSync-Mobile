@@ -29,6 +29,18 @@ class CoupleRemoteDatasource {
     return CoupleDayModal.fromJson(response.data['data']);
   }
 
+  Future<CoupleDayModal> updateStartDate(DateTime startDate) async {
+    final date =
+        '${startDate.year.toString().padLeft(4, '0')}-'
+        '${startDate.month.toString().padLeft(2, '0')}-'
+        '${startDate.day.toString().padLeft(2, '0')}';
+    final response = await dio.patch(
+      '/couples/me/start-date',
+      data: {'startDate': date},
+    );
+    return CoupleDayModal.fromJson(response.data['data']);
+  }
+
   Future<void> createCouple(String code) async {
     await dio.post('/couples/code/$code');
   }

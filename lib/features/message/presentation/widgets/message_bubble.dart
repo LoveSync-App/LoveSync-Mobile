@@ -1,9 +1,15 @@
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:lovesync_mobile/app_routes.dart';
+import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/features/location/presentation/widgets/location_map.dart';
 import 'package:lovesync_mobile/features/message/domain/entities/chat_message.dart';
+import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
@@ -354,7 +360,7 @@ class _LocationTimelineCard extends StatelessWidget {
   }
 }
 
-class _AttachmentPreview extends StatelessWidget {
+class _AttachmentPreview extends StatefulWidget {
   const _AttachmentPreview({
     required this.url,
     required this.type,
@@ -366,21 +372,55 @@ class _AttachmentPreview extends StatelessWidget {
   final bool isMine;
 
   @override
+  State<_AttachmentPreview> createState() => _AttachmentPreviewState();
+}
+
+class _AttachmentPreviewState extends State<_AttachmentPreview> {
+  bool _isDownloading = false;
+
+  @override
   Widget build(BuildContext context) {
+    Widget preview;
     if (_isImageAttachment) {
-      return GestureDetector(
+      preview = GestureDetector(
         onTap: () => _openImageViewer(context),
         child: _buildImagePreview(context),
       );
-    }
-    if (_isVideoAttachment) {
-      return GestureDetector(
+    } else if (_isVideoAttachment) {
+      preview = GestureDetector(
         onTap: () => _openVideoViewer(context),
         child: _buildVideoPreview(context),
       );
+    } else {
+      preview = _buildFilePreview();
     }
 
-    return _buildFilePreview();
+    return Stack(
+      children: [
+        preview,
+        Positioned(
+          top: 6,
+          right: 6,
+          child: IconButton.filled(
+            tooltip: 'Tải xuống',
+            onPressed: _isDownloading ? null : _download,
+            icon: _isDownloading
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.download_rounded, size: 20),
+            style: IconButton.styleFrom(
+              minimumSize: const Size(38, 38),
+              backgroundColor: Colors.black.withValues(alpha: 0.48),
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: Colors.black.withValues(alpha: 0.38),
+              disabledForegroundColor: Colors.white,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   bool get _isImageAttachment =>
@@ -390,13 +430,16 @@ class _AttachmentPreview extends StatelessWidget {
       _hasExtension({'.mp4', '.mov', '.m4v', '.webm'});
 
   bool _hasExtension(Set<String> extensions) {
-    final path = Uri.tryParse(url)?.path.toLowerCase() ?? url.toLowerCase();
+    final path =
+        Uri.tryParse(widget.url)?.path.toLowerCase() ??
+        widget.url.toLowerCase();
     return extensions.any(path.endsWith);
   }
 
   Widget _buildFilePreview() {
-    final name = (Uri.tryParse(url)?.pathSegments.lastOrNull ?? 'Tệp đính kèm')
-        .replaceAll('%20', ' ');
+    final name =
+        (Uri.tryParse(widget.url)?.pathSegments.lastOrNull ?? 'Tệp đính kèm')
+            .replaceAll('%20', ' ');
     return Container(
       width: 220,
       padding: const EdgeInsets.all(12),
@@ -408,7 +451,7 @@ class _AttachmentPreview extends StatelessWidget {
         children: [
           Icon(
             Icons.insert_drive_file_outlined,
-            color: isMine ? Colors.white : const Color(0xFFA03B56),
+            color: widget.isMine ? Colors.white : const Color(0xFFA03B56),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -431,7 +474,7 @@ class _AttachmentPreview extends StatelessWidget {
       child: Icon(
         Icons.play_circle_fill_rounded,
         size: 42,
-        color: isMine ? Colors.white : const Color(0xFFA03B56),
+        color: widget.isMine ? Colors.white : const Color(0xFFA03B56),
       ),
     );
   }
@@ -440,7 +483,7 @@ class _AttachmentPreview extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
       child: Image.network(
-        url,
+        widget.url,
         width: 220,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) => Container(
@@ -450,7 +493,7 @@ class _AttachmentPreview extends StatelessWidget {
           color: Colors.black.withValues(alpha: 0.08),
           child: Icon(
             Icons.broken_image_outlined,
-            color: isMine ? Colors.white : const Color(0xFFA03B56),
+            color: widget.isMine ? Colors.white : const Color(0xFFA03B56),
           ),
         ),
       ),
@@ -470,7 +513,7 @@ class _AttachmentPreview extends StatelessWidget {
                 minScale: 0.8,
                 maxScale: 4,
                 child: Image.network(
-                  url,
+                  widget.url,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) => const Icon(
                     Icons.broken_image_outlined,
@@ -501,6 +544,55 @@ class _AttachmentPreview extends StatelessWidget {
   }
 
   void _openVideoViewer(BuildContext context) {
-    context.push(AppRoutePaths.chatVideoViewer, extra: {'url': url});
+    context.push(AppRoutePaths.chatVideoViewer, extra: {'url': widget.url});
+  }
+
+  Future<void> _download() async {
+    setState(() => _isDownloading = true);
+    try {
+      final fileName = _fileName;
+      final dio = context.read<DioClient>().dio;
+      final file = File(
+        '${Directory.systemTemp.path}/${DateTime.now().microsecondsSinceEpoch}_$fileName',
+      );
+      await dio.download(widget.url, file.path);
+      if (!mounted) return;
+
+      final box = context.findRenderObject() as RenderBox?;
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          title: fileName,
+          sharePositionOrigin: box == null
+              ? null
+              : box.localToGlobal(Offset.zero) & box.size,
+        ),
+      );
+    } on DioException catch (error) {
+      _showError(
+        error.response?.statusCode == 404
+            ? 'Tệp không còn tồn tại.'
+            : 'Không thể tải tệp. Vui lòng thử lại.',
+      );
+    } catch (_) {
+      _showError('Không thể lưu tệp. Vui lòng thử lại.');
+    } finally {
+      if (mounted) setState(() => _isDownloading = false);
+    }
+  }
+
+  String get _fileName {
+    final rawName = Uri.tryParse(widget.url)?.pathSegments.lastOrNull;
+    final decoded = rawName == null || rawName.isEmpty
+        ? 'tep_dinh_kem'
+        : Uri.decodeComponent(rawName);
+    return decoded.replaceAll(RegExp(r'[^a-zA-Z0-9._ -]'), '_');
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
   }
 }

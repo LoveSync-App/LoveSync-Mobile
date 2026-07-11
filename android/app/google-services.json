@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:664260312342:android:e2e01cdef1ad7ee5246437",
+        "mobilesdk_app_id": "1:664260312342:android:d0fdf2d809af4f31246437",
         "android_client_info": {
-          "package_name": "com.example.lovesync_mobile"
+          "package_name": "com.dinhphu.lovesync"
         }
       },
       "oauth_client": [
@@ -31,10 +31,10 @@
               "client_type": 3
             },
             {
-              "client_id": "664260312342-tvp3hlho6de5b6cm6cdr7tkcfmn8ckre.apps.googleusercontent.com",
+              "client_id": "664260312342-71377onb9om25lfesnaufqkli8o9gcj8.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.lovesyncMobile"
+                "bundle_id": "com.dinhphu.lovesync"
               }
             }
           ]
