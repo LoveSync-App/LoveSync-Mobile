@@ -110,6 +110,25 @@ class AuthRemoteDatasource {
     }
   }
 
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String newPasswordConfirm,
+  }) async {
+    try {
+      await dio.post(
+        '/auth/password/change',
+        data: {
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+          'newPasswordConfirm': newPasswordConfirm,
+        },
+      );
+    } on DioException catch (error) {
+      throw Exception(_readErrorMessage(error, 'Không thể đổi mật khẩu.'));
+    }
+  }
+
   Future<RegisterResponseModel> register(
     String email,
     String password,

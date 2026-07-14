@@ -9,7 +9,6 @@ import 'package:lovesync_mobile/features/couple/domain/usecases/get_invitation_p
 import 'package:lovesync_mobile/features/couple/domain/usecases/patch_accept_invitation.dart';
 import 'package:lovesync_mobile/features/couple/domain/usecases/patch_reject_invitation.dart';
 import 'package:provider/provider.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 
 class CoupleConfirmationPage extends StatefulWidget {
   const CoupleConfirmationPage({super.key});
@@ -53,18 +52,25 @@ class _coupleConfirmationPageState extends State<CoupleConfirmationPage> {
   }
 
   Future<void> _fetchInvitations() async {
+    if (!mounted) return;
+
     setState(() {
       isLoading = true;
     });
 
     try {
       final result = await _getInvitationPending();
+      if (!mounted) return;
       setState(() {
         invitations = result;
       });
     } catch (e) {
-      // Handle error
+      if (!mounted) return;
+      setState(() {
+        invitations = [];
+      });
     } finally {
+      if (!mounted) return;
       setState(() {
         isLoading = false;
       });
@@ -85,35 +91,53 @@ class _coupleConfirmationPageState extends State<CoupleConfirmationPage> {
         ),
         centerTitle: true,
       ),
-      body: Skeletonizer(
-        enabled: isLoading,
-        child: (invitations.isEmpty)
-            ? Center(
+      body: RefreshIndicator(
+        onRefresh: _fetchInvitations,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          padding: const EdgeInsets.only(bottom: 20),
+          children: [
+            if (isLoading && invitations.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.notifications_off,
-                      size: 80,
-                      color: Colors.grey.shade400,
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Không có lời mời nào',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
+                  children: const [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 12),
+                    Text('Đang tải thông báo...'),
                   ],
                 ),
               )
-            : ListView.builder(
-                itemCount: invitations.length,
-                itemBuilder: (context, index) {
-                  return _buildContent(invitations[index]);
-                },
-              ),
+            else if (invitations.isEmpty)
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.7,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.notifications_off,
+                        size: 80,
+                        color: Colors.grey.shade400,
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Không có lời mời nào',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ...invitations.map((invitation) => _buildContent(invitation)).toList(),
+          ],
+        ),
       ),
     );
   }
@@ -218,7 +242,11 @@ class _coupleConfirmationPageState extends State<CoupleConfirmationPage> {
                       }
                     }
                   },
-                  child: Text('Đồng Ý'),
+                  child: const Text('Đồng Ý'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.pink,
+                    foregroundColor: Colors.white,
+                  ),
                 ),
               ),
             ],

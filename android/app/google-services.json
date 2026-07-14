@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "664260312342-e2tmdk1m6be4ktqvu1mo5c0o5kh74drr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dinhphu.lovesync",
+            "certificate_hash": "ba6dd1e841f78fb13fc180e28c0b50e11c5d63f1"
+          }
+        },
+        {
           "client_id": "664260312342-sesk301dr3o0hs9v5cln3nva1mm8f9au.apps.googleusercontent.com",
           "client_type": 3
         }

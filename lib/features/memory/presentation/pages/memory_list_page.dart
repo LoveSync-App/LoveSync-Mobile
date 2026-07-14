@@ -6,6 +6,7 @@ import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/features/memory/data/datasources/memory_remote_datasource.dart';
 import 'package:lovesync_mobile/features/memory/data/repositories/memory_repository_impl.dart';
 import 'package:lovesync_mobile/features/memory/domain/entities/memory_response.dart';
+import 'package:lovesync_mobile/features/memory/domain/usecases/delete_memory.dart';
 import 'package:lovesync_mobile/features/memory/domain/usecases/get_all_memories.dart';
 import 'package:provider/provider.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -20,9 +21,11 @@ class MemoryListPage extends StatefulWidget {
 
 class _MemoryListPageState extends State<MemoryListPage> {
   late final GetAllMemories _getAllMemories;
+  late final DeleteMemory _deleteMemoryUsecase;
 
   bool _isLoading = false;
   bool _isFetching = false;
+  bool _isDeleting = false;
   bool _hasLoadedOnce = false;
   bool _wasVisible = false;
 
@@ -55,11 +58,12 @@ class _MemoryListPageState extends State<MemoryListPage> {
   @override
   void initState() {
     super.initState();
-    _getAllMemories = GetAllMemories(
-      MemoryRepositoryImpl(
-        MemoryRemoteDatasource(context.read<DioClient>().dio),
-      ),
+    final repository = MemoryRepositoryImpl(
+      MemoryRemoteDatasource(context.read<DioClient>().dio),
     );
+
+    _getAllMemories = GetAllMemories(repository);
+    _deleteMemoryUsecase = DeleteMemory(repository);
 
     _fetchMemories();
   }
@@ -409,15 +413,89 @@ class _MemoryListPageState extends State<MemoryListPage> {
             children: [
               Icon(Icons.schedule, size: 14, color: Colors.grey.shade400),
               const SizedBox(width: 4),
-              Text(
-                DateFormat('HH:mm, dd/MM/yyyy').format(item.time.toLocal()),
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+              Expanded(
+                child: Text(
+                  DateFormat('HH:mm, dd/MM/yyyy').format(item.time.toLocal()),
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                ),
+              ),
+              IconButton(
+                onPressed: _isDeleting
+                    ? null
+                    : () => _confirmDeleteMemory(item),
+                icon: const Icon(Icons.delete_outline, size: 20),
+                color: Colors.red.shade400,
+                tooltip: 'Xóa kỷ niệm',
               ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmDeleteMemory(MemoryResponse item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Xóa kỷ niệm?'),
+          content: const Text(
+            'Kỷ niệm sẽ bị xóa vĩnh viễn và không thể khôi phục.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text(
+                'Hủy',
+                style: TextStyle(color: Color(0xFFC2414B)),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: TextButton.styleFrom(
+                backgroundColor: const Color(0xFFC2414B),
+              ),
+              child: const Text(
+                'Xóa',
+                style: TextStyle(color: Color(0xFFFFFFFF)),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await _deleteMemory(item);
+    }
+  }
+
+  Future<void> _deleteMemory(MemoryResponse item) async {
+    if (_isDeleting) return;
+
+    setState(() => _isDeleting = true);
+    try {
+      await _deleteMemoryUsecase.call(memoryId: item.id);
+      if (mounted) {
+        setState(() {
+          memories.removeWhere((memory) => memory.id == item.id);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Xóa kỷ niệm thành công')),
+        );
+      }
+    } on DioException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi khi xóa kỷ niệm: ${e.message}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isDeleting = false);
+      }
+    }
   }
 
   void _openMemoryImage(MemoryResponse item) {

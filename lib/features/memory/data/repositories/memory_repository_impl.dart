@@ -34,4 +34,9 @@ class MemoryRepositoryImpl extends MemoryRepository {
       time: time,
     );
   }
+
+  @override
+  Future<void> deleteMemory({required String memoryId}) async {
+    return await memoryRemoteDatasource.deleteMemory(memoryId);
+  }
 }

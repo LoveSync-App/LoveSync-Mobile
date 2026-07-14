@@ -314,16 +314,19 @@ class _CalendarHeader extends StatelessWidget {
             ],
           ),
         ),
-        TextButton(onPressed: onToday, child: const Text('Hôm nay')),
+        TextButton(onPressed: onToday, child: const Text('Hôm nay', style: TextStyle(color: Color(0xFFA03B56)))),
         IconButton.filledTonal(
           onPressed: onPrevious,
           icon: const Icon(Icons.chevron_left_rounded),
+          style: IconButton.styleFrom(foregroundColor: Color(0xFFA03B56), backgroundColor: Color(0xFFF9E5EB)),
           tooltip: 'Tháng trước',
         ),
         const SizedBox(width: 6),
         IconButton.filledTonal(
           onPressed: onNext,
           icon: const Icon(Icons.chevron_right_rounded),
+          style: IconButton.styleFrom(foregroundColor: Color(0xFFA03B56), backgroundColor: Color(0xFFF9E5EB)),
+          
           tooltip: 'Tháng sau',
         ),
       ],

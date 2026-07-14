@@ -1,7 +1,13 @@
+import 'dart:async';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FcmInitializer {
+  static final StreamController<void> _notificationController =
+      StreamController<void>.broadcast();
+  static Stream<void> get onNotification => _notificationController.stream;
+
   static bool _appConfigured = false;
   static int? _lastRegisteredUserId;
 
@@ -25,11 +31,11 @@ class FcmInitializer {
   }
 
   static Future<void> _configureAppLevel() async {
-
     FirebaseMessaging.onMessage.listen((message) {
       print('FCM FOREGROUND');
       print('Title: ${message.notification?.title}');
       print('Body: ${message.notification?.body}');
+      _notificationController.add(null);
     });
 
     _appConfigured = true;
@@ -37,5 +43,9 @@ class FcmInitializer {
 
   static void clearUser() {
     _lastRegisteredUserId = null;
+  }
+
+  static void dispose() {
+    _notificationController.close();
   }
 }

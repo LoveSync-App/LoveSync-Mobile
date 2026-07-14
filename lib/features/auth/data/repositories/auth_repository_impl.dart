@@ -94,4 +94,17 @@ class AuthRepositoryImpl extends AuthRepository {
       passwordConfirm: passwordConfirm,
     );
   }
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String newPasswordConfirm,
+  }) {
+    return remoteDatasource.changePassword(
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+      newPasswordConfirm: newPasswordConfirm,
+    );
+  }
 }

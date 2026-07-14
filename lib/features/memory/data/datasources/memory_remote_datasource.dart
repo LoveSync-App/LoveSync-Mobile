@@ -27,4 +27,8 @@ class MemoryRemoteDatasource {
       },
     );
   }
+
+  Future<void> deleteMemory(String memoryId) async {
+    await dio.delete('/memories/$memoryId');
+  }
 }

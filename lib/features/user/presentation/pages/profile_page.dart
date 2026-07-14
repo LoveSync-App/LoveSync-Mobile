@@ -5,12 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/app_routes.dart';
 import 'package:lovesync_mobile/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:lovesync_mobile/features/auth/data/datasources/google_auth_datasource.dart';
 import 'package:lovesync_mobile/features/auth/data/repositories/auth_repository_impl.dart';
-import 'package:lovesync_mobile/features/auth/domain/usecases/post_add_password.dart';
+import 'package:lovesync_mobile/features/auth/domain/usecases/post_change_password.dart';
 import 'package:lovesync_mobile/features/couple/data/datasources/couple_remote_datasource.dart';
 import 'package:lovesync_mobile/features/couple/data/repositories/couple_repository_impl.dart';
 import 'package:lovesync_mobile/features/couple/domain/usecases/patch_unlink_couple.dart';
@@ -36,7 +37,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   late final GetUserInfo _getUserInfo;
   late final PatchUpdateMe _patchUpdateMe;
-  late final PostAddPassword _postAddPassword;
+  late final PostChangePassword _postChangePassword;
   late final UploadFile _uploadFile;
   late final AuthRemoteDatasource _authRemoteDatasource;
   late final GoogleAuthDatasource _googleAuthDatasource;
@@ -44,6 +45,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _currentPasswordController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
@@ -64,9 +66,8 @@ class _ProfilePageState extends State<ProfilePage> {
     final dio = context.read<DioClient>().dio;
     _authRemoteDatasource = AuthRemoteDatasource(dio);
     _googleAuthDatasource = GoogleAuthDatasource();
-    _postAddPassword = PostAddPassword(
-      AuthRepositoryImpl(AuthRemoteDatasource(dio)),
-    );
+    final authRepository = AuthRepositoryImpl(AuthRemoteDatasource(dio));
+    _postChangePassword = PostChangePassword(authRepository);
     final userRepository = UserRepositoryImpl(UserRemoteDatasource(dio));
     _getUserInfo = GetUserInfo(userRepository);
     _patchUpdateMe = PatchUpdateMe(userRepository);
@@ -82,6 +83,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _currentPasswordController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -119,7 +121,31 @@ class _ProfilePageState extends State<ProfilePage> {
       );
       if (pickedFile == null || !mounted) return;
 
-      setState(() => _selectedAvatar = File(pickedFile.path));
+      // Crop the image
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: pickedFile.path,
+        compressFormat: ImageCompressFormat.jpg,
+        compressQuality: 90,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Chỉnh sửa ảnh',
+            toolbarColor: const Color(0xFFA03B56),
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: false,
+            hideBottomControls: false,
+          ),
+          IOSUiSettings(
+            title: 'Chỉnh sửa ảnh',
+            cancelButtonTitle: 'Hủy',
+            doneButtonTitle: 'Xong',
+          ),
+        ],
+      );
+
+      if (croppedFile != null && mounted) {
+        setState(() => _selectedAvatar = File(croppedFile.path));
+      }
     } on PlatformException catch (e) {
       if (!mounted || e.code == 'already_active') return;
       _showSnackBar('Không chọn được ảnh đại diện.');
@@ -174,8 +200,10 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _showPasswordSheet() async {
+    _currentPasswordController.clear();
     _passwordController.clear();
     _confirmPasswordController.clear();
+    var showCurrentPassword = false;
     var showPassword = false;
     var showConfirmPassword = false;
 
@@ -201,6 +229,27 @@ class _ProfilePageState extends State<ProfilePage> {
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 14),
+                  TextField(
+                    controller: _currentPasswordController,
+                    obscureText: !showCurrentPassword,
+                    decoration:
+                        _buildInputDecoration(
+                          hintText: 'Mật khẩu hiện tại',
+                          icon: Icons.lock_outlined,
+                        ).copyWith(
+                          suffixIcon: IconButton(
+                            onPressed: () => setSheetState(
+                              () => showCurrentPassword = !showCurrentPassword,
+                            ),
+                            icon: Icon(
+                              showCurrentPassword
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                            ),
+                          ),
+                        ),
+                  ),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: _passwordController,
                     obscureText: !showPassword,
@@ -276,11 +325,16 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _savePassword(BuildContext sheetContext) async {
     final navigator = Navigator.of(sheetContext);
+    final currentPassword = _currentPasswordController.text.trim();
     final password = _passwordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
 
+    if (currentPassword.isEmpty) {
+      _showSnackBar('Vui lòng nhập mật khẩu hiện tại.');
+      return;
+    }
     if (password.length < 6) {
-      _showSnackBar('Mật khẩu cần có ít nhất 6 ký tự.');
+      _showSnackBar('Mật khẩu mới cần có ít nhất 6 ký tự.');
       return;
     }
     if (password != confirmPassword) {
@@ -290,9 +344,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
     setState(() => _isUpdatingPassword = true);
     try {
-      await _postAddPassword(
-        password: password,
-        passwordConfirm: confirmPassword,
+      await _postChangePassword(
+        currentPassword: currentPassword,
+        newPassword: password,
+        newPasswordConfirm: confirmPassword,
       );
       if (!mounted) return;
       navigator.pop();
@@ -371,7 +426,10 @@ class _ProfilePageState extends State<ProfilePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Hủy'),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(color: Color(0xFFC2414B)),
+            ),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
@@ -454,26 +512,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                   ),
-                  if (false) ...[
-                    OutlinedButton.icon(
-                      onPressed: _isUpdatingPassword
-                          ? null
-                          : _showPasswordSheet,
-                      icon: const Icon(Icons.key_outlined),
-                      label: const Text('Đổi mật khẩu'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFA03B56),
-                        side: const BorderSide(color: Color(0xFFA03B56)),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    TextButton.icon(
-                      onPressed: _logout,
-                      icon: const Icon(Icons.logout),
-                      label: const Text('Đăng xuất'),
-                    ),
-                  ],
+
                 ],
               ),
             ),
@@ -636,6 +675,8 @@ class _ProfilePageState extends State<ProfilePage> {
         : const Color(0xFFA03B56);
     return ListTile(
       onTap: onTap,
+      tileColor: Colors.white,
+      splashColor: color.withValues(alpha: 0.1),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       leading: Container(
         width: 42,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -5,7 +7,9 @@ import 'package:lovesync_mobile/app_routes.dart';
 import 'package:lovesync_mobile/core/network/dio_client.dart';
 import 'package:lovesync_mobile/features/couple/data/datasources/couple_remote_datasource.dart';
 import 'package:lovesync_mobile/features/couple/data/repositories/couple_repository_impl.dart';
+import 'package:lovesync_mobile/features/couple/domain/usecases/get_invitation_pending.dart';
 import 'package:lovesync_mobile/features/couple/domain/usecases/get_my_couple.dart';
+import 'package:lovesync_mobile/fcm_initializer.dart';
 import 'package:provider/provider.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
@@ -16,7 +20,10 @@ class CoupleShellScaffold extends StatefulWidget {
 
   static Future<void> refreshCoupleState(BuildContext context) async {
     final state = context.findAncestorStateOfType<_CoupleShellScaffoldState>();
-    if (state != null) await state._fetchCoupleData();
+    if (state != null) {
+      await state._fetchCoupleData();
+      await state._fetchPendingInvitations();
+    }
   }
 
   static bool isCoupleActive(BuildContext context) {
@@ -30,20 +37,32 @@ class CoupleShellScaffold extends StatefulWidget {
   State<StatefulWidget> createState() => _CoupleShellScaffoldState();
 }
 
-class _CoupleShellScaffoldState extends State<CoupleShellScaffold> {
+class _CoupleShellScaffoldState extends State<CoupleShellScaffold>
+    with WidgetsBindingObserver {
   late final GetMyCouple _getMyCouple;
+  late final GetInvitationPending _getInvitationPending;
+  late final StreamSubscription<void> _notificationSubscription;
   bool isLoading = false;
   bool isCouple = true;
+  int pendingInvitationCount = 0;
+  bool hasPendingNotification = false;
 
   @override
   void initState() {
     super.initState();
-    _getMyCouple = GetMyCouple(
-      CoupleRepositoryImpl(
-        CoupleRemoteDatasource(context.read<DioClient>().dio),
-      ),
+    WidgetsBinding.instance.addObserver(this);
+    final repository = CoupleRepositoryImpl(
+      CoupleRemoteDatasource(context.read<DioClient>().dio),
     );
+    _getMyCouple = GetMyCouple(repository);
+    _getInvitationPending = GetInvitationPending(repository);
     _fetchCoupleData();
+    _fetchPendingInvitations();
+    _notificationSubscription = FcmInitializer.onNotification.listen((_) {
+      setState(() {
+        hasPendingNotification = true;
+      });
+    });
   }
 
   Future<void> _fetchCoupleData() async {
@@ -74,6 +93,34 @@ class _CoupleShellScaffoldState extends State<CoupleShellScaffold> {
     }
   }
 
+  Future<void> _fetchPendingInvitations() async {
+    try {
+      final invitations = await _getInvitationPending();
+      if (mounted) {
+        setState(() => pendingInvitationCount = invitations.length);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => pendingInvitationCount = 0);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _notificationSubscription.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      _fetchPendingInvitations();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -96,13 +143,17 @@ class _CoupleShellScaffoldState extends State<CoupleShellScaffold> {
                 Icons.message_outlined,
                 color: Color(0xFF1A1C1D),
               ),
-            )
-          else
+            ),
+          if (!isCouple)
             IconButton(
               onPressed: () async {
                 final accepted = await context.push<bool>(
                   AppRoutePaths.coupleInvitations,
                 );
+                if (mounted) {
+                  setState(() => hasPendingNotification = false);
+                }
+                await _fetchPendingInvitations();
                 if (accepted != true || !mounted) return;
 
                 await _fetchCoupleData();
@@ -113,10 +164,28 @@ class _CoupleShellScaffoldState extends State<CoupleShellScaffold> {
                   );
                 }
               },
-              icon: Icon(
-                Icons.notifications_none,
-                color: const Color(0xFF1A1C1D),
-              ),
+              icon: pendingInvitationCount > 0 || hasPendingNotification
+                  ? Badge(
+                      label: Text(
+                        pendingInvitationCount > 1
+                            ? pendingInvitationCount.toString()
+                            : '1',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      backgroundColor: const Color(0xFFD32F2F),
+                      child: const Icon(
+                        Icons.notifications_active_outlined,
+                        color: Color(0xFF1A1C1D),
+                      ),
+                    )
+                  : const Icon(
+                      Icons.notifications_none,
+                      color: Color(0xFF1A1C1D),
+                    ),
             ),
           const SizedBox(width: 12),
         ],
@@ -139,7 +208,7 @@ class _CoupleShellScaffoldState extends State<CoupleShellScaffold> {
             if (isCouple) ...const [
               NavigationDestination(
                 icon: Icon(Icons.photo_library, color: Color(0xFF1A1C1D)),
-                label: 'Kĩ Niệm',
+                label: 'Kỉ Niệm',
               ),
               NavigationDestination(
                 icon: Icon(

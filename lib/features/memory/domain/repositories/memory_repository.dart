@@ -7,4 +7,7 @@ abstract class MemoryRepository {
     required String description,
     required DateTime time,
   });
+  Future<void> deleteMemory({
+    required String memoryId,
+  });
 }
