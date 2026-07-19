@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "664260312342",
+    "project_id": "lovesync-9ee1e",
+    "storage_bucket": "lovesync-9ee1e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:664260312342:android:d0fdf2d809af4f31246437",
+        "android_client_info": {
+          "package_name": "com.dinhphu.lovesync"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "664260312342-e2tmdk1m6be4ktqvu1mo5c0o5kh74drr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dinhphu.lovesync",
+            "certificate_hash": "ba6dd1e841f78fb13fc180e28c0b50e11c5d63f1"
+          }
+        },
+        {
+          "client_id": "664260312342-sesk301dr3o0hs9v5cln3nva1mm8f9au.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCZtCRZcW0bV0qgpj0WUxFh-MiQjxQVir0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "664260312342-sesk301dr3o0hs9v5cln3nva1mm8f9au.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "664260312342-71377onb9om25lfesnaufqkli8o9gcj8.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.dinhphu.lovesync"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

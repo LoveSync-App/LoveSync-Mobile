@@ -10,6 +10,17 @@
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.664260312342-71377onb9om25lfesnaufqkli8o9gcj8</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -22,8 +33,24 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>GIDClientID</key>
+	<string>664260312342-71377onb9om25lfesnaufqkli8o9gcj8.apps.googleusercontent.com</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>LoveSync cần quyền truy cập micro để thực hiện cuộc gọi thoại.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>LoveSync cần quyền truy cập camera để thực hiện cuộc gọi video.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>LoveSync cần vị trí để gửi vị trí hiện tại và chia sẻ trực tiếp với người ấy.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>LoveSync cần cập nhật vị trí khi bạn đang bật chia sẻ trực tiếp với người ấy.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+		<string>location</string>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
