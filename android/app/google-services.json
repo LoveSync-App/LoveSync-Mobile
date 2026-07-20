@@ -1,48 +1,48 @@
 {
   "project_info": {
-    "project_number": "664260312342",
-    "project_id": "lovesync-9ee1e",
-    "storage_bucket": "lovesync-9ee1e.firebasestorage.app"
+    "project_number": "375400582595",
+    "project_id": "love-sync-675db",
+    "storage_bucket": "love-sync-675db.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:664260312342:android:d0fdf2d809af4f31246437",
+        "mobilesdk_app_id": "1:375400582595:android:2974f5e3c2210988a3c176",
         "android_client_info": {
-          "package_name": "com.dinhphu.lovesync"
+          "package_name": "com.example.lovesync_mobile"
         }
       },
       "oauth_client": [
         {
-          "client_id": "664260312342-e2tmdk1m6be4ktqvu1mo5c0o5kh74drr.apps.googleusercontent.com",
+          "client_id": "375400582595-kqkqcdkpkjo71j15973eg05avnptkib2.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.dinhphu.lovesync",
-            "certificate_hash": "ba6dd1e841f78fb13fc180e28c0b50e11c5d63f1"
+            "package_name": "com.example.lovesync_mobile",
+            "certificate_hash": "bb029ac6d7b455518e8ef24b3c3e3aeaf7833061"
           }
         },
         {
-          "client_id": "664260312342-sesk301dr3o0hs9v5cln3nva1mm8f9au.apps.googleusercontent.com",
+          "client_id": "375400582595-qq5bfsi9mceaicleb4ksann04lfosh5p.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCZtCRZcW0bV0qgpj0WUxFh-MiQjxQVir0"
+          "current_key": "AIzaSyD4GENp4vEKHfds1P9LUddTOMw4q_2fH3E"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "664260312342-sesk301dr3o0hs9v5cln3nva1mm8f9au.apps.googleusercontent.com",
+              "client_id": "375400582595-qq5bfsi9mceaicleb4ksann04lfosh5p.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "664260312342-71377onb9om25lfesnaufqkli8o9gcj8.apps.googleusercontent.com",
+              "client_id": "375400582595-l5o6pjh8hv454q66fcc78kothp32qft8.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.dinhphu.lovesync"
+                "bundle_id": "com.example.lovesyncMobile"
               }
             }
           ]

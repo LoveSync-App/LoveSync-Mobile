@@ -63,8 +63,9 @@ class DefaultFirebaseOptions {
     messagingSenderId: '664260312342',
     projectId: 'lovesync-9ee1e',
     storageBucket: 'lovesync-9ee1e.firebasestorage.app',
-    iosClientId: '664260312342-71377onb9om25lfesnaufqkli8o9gcj8.apps.googleusercontent.com',
-    iosBundleId: 'com.dinhphu.lovesync',
+    iosClientId:
+        '664260312342-71377onb9om25lfesnaufqkli8o9gcj8.apps.googleusercontent.com',
+    iosBundleId: 'com.example.lovesync_mobile',
   );
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyD0sn4J8nhReoshM4pWGOv-1F0jwouMTfw',

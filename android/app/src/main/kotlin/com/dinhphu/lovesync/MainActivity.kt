@@ -1,4 +1,4 @@
-package com.dinhphu.lovesync
+package com.example.lovesync_mobile
 
 import io.flutter.embedding.android.FlutterActivity
 

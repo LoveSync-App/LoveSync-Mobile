@@ -3,21 +3,23 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>664260312342-71377onb9om25lfesnaufqkli8o9gcj8.apps.googleusercontent.com</string>
+	<string>375400582595-l5o6pjh8hv454q66fcc78kothp32qft8.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.664260312342-71377onb9om25lfesnaufqkli8o9gcj8</string>
+	<string>com.googleusercontent.apps.375400582595-l5o6pjh8hv454q66fcc78kothp32qft8</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>375400582595-kqkqcdkpkjo71j15973eg05avnptkib2.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
-	<string>AIzaSyCoEilrQPv7LmdI8vg7_FWEULSecKGRcbo</string>
+	<string>AIzaSyD0sn4J8nhReoshM4pWGOv-1F0jwouMTfw</string>
 	<key>GCM_SENDER_ID</key>
-	<string>664260312342</string>
+	<string>375400582595</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.dinhphu.lovesync</string>
+	<string>com.example.lovesyncMobile</string>
 	<key>PROJECT_ID</key>
-	<string>lovesync-9ee1e</string>
+	<string>love-sync-675db</string>
 	<key>STORAGE_BUCKET</key>
-	<string>lovesync-9ee1e.firebasestorage.app</string>
+	<string>love-sync-675db.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -29,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:664260312342:ios:d194ec5f642bbdd1246437</string>
+	<string>1:375400582595:ios:6ba7448859299f77a3c176</string>
 </dict>
 </plist>
