@@ -116,7 +116,7 @@ class MessageComposer extends StatelessWidget {
                     maxLines: 4,
                     textInputAction: TextInputAction.newline,
                     decoration: InputDecoration(
-                      hintText: 'Nhắn gì đó cho người ấy...',
+                      hintText: 'Nhắn gì đó...',
                       hintStyle: const TextStyle(color: Color(0xFF9AA0A6)),
                       filled: true,
                       fillColor: const Color(0xFFF6F1F4),
